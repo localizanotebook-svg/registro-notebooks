@@ -4,53 +4,42 @@ import { enviarLink, listarRegistros } from '../lib/api'
 
 export default function AdminEnviar() {
   const navigate = useNavigate()
-  const token = localStorage.getItem('admin_token')
+  const adminToken = localStorage.getItem('admin_token')
 
-  const [form, setForm] = useState({ nome: '', email: '', serial: '', modelo_notebook: '' })
-  const [destinatarios, setDestinatarios] = useState([])
+  const [links, setLinks] = useState([])
   const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [generating, setGenerating] = useState(false)
   const [generatedLink, setGeneratedLink] = useState('')
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState('')
 
-  const fetchDestinatarios = useCallback(async () => {
-    if (!token) return
-    const data = await listarRegistros(token)
-    if (data.registros) setDestinatarios(data.registros)
-  }, [token])
+  const fetchLinks = useCallback(async () => {
+    if (!adminToken) return
+    const data = await listarRegistros(adminToken)
+    if (data.registros) setLinks(data.registros)
+  }, [adminToken])
 
   useEffect(() => {
-    if (!token) {
+    if (!adminToken) {
       navigate('/admin/login')
       return
     }
-    fetchDestinatarios()
-  }, [token, navigate, fetchDestinatarios])
+    fetchLinks()
+  }, [adminToken, navigate, fetchLinks])
 
-  function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleGenerate() {
     setError('')
-    setSuccess('')
     setGeneratedLink('')
-    setCopied(false)
-    setSending(true)
+    setGenerating(true)
 
-    const data = await enviarLink(token, form)
+    const data = await enviarLink(adminToken, {})
     if (data.sucesso) {
-      setSuccess('Registro criado! Copie o link abaixo e envie para o destinatário.')
       setGeneratedLink(data.link)
-      setForm({ nome: '', email: '', serial: '', modelo_notebook: '' })
-      await fetchDestinatarios()
+      await fetchLinks()
     } else {
-      setError(data.error || 'Erro ao criar registro')
+      setError(data.error || 'Erro ao gerar link')
     }
-    setSending(false)
+    setGenerating(false)
   }
 
   function copyLink() {
@@ -63,7 +52,7 @@ export default function AdminEnviar() {
     <div className="admin-layout">
       <header className="admin-header">
         <div className="admin-header-content">
-          <h1>Localiza - Enviar Link</h1>
+          <h1>Localiza - Gerar Links</h1>
           <div className="admin-header-actions">
             <button className="btn btn-sm" onClick={() => navigate('/admin')}>Dashboard</button>
             <button className="btn btn-sm btn-outline" onClick={() => { localStorage.removeItem('admin_token'); navigate('/admin/login') }}>Sair</button>
@@ -74,15 +63,27 @@ export default function AdminEnviar() {
       <main className="admin-main">
         <div className="split-layout">
           <div className="split-left">
-            <div className="card">
-              <h3>Cadastrar Destinatário</h3>
+            <div className="card" style={{ textAlign: 'center' }}>
+              <h3>Gerar Novo Link</h3>
+              <p style={{ color: 'var(--gray-500)', fontSize: 14, marginBottom: 20 }}>
+                Clique no botão para gerar um link único de registro.
+                O funcionário preenche os dados ao acessar o link.
+              </p>
 
               {error && <div className="alert alert-error">{error}</div>}
-              {success && <div className="alert alert-success">{success}</div>}
+
+              <button
+                className="btn btn-primary btn-full"
+                onClick={handleGenerate}
+                disabled={generating}
+                style={{ marginBottom: 20 }}
+              >
+                {generating ? 'Gerando...' : 'Gerar Novo Link'}
+              </button>
 
               {generatedLink && (
-                <div className="link-box">
-                  <label>Link de registro gerado:</label>
+                <div className="link-box" style={{ textAlign: 'left' }}>
+                  <label>Link gerado:</label>
                   <div className="link-row">
                     <input type="text" value={generatedLink} readOnly className="link-input" />
                     <button type="button" className="btn btn-sm btn-primary" onClick={copyLink}>
@@ -91,56 +92,38 @@ export default function AdminEnviar() {
                   </div>
                 </div>
               )}
-
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label>Nome *</label>
-                  <input name="nome" value={form.nome} onChange={handleChange} required placeholder="Nome completo" />
-                </div>
-                <div className="form-group">
-                  <label>Email *</label>
-                  <input name="email" type="email" value={form.email} onChange={handleChange} required placeholder="email@empresa.com" />
-                </div>
-                <div className="form-group">
-                  <label>Número de série *</label>
-                  <input name="serial" value={form.serial} onChange={handleChange} required placeholder="5CGXXXX" />
-                </div>
-                <div className="form-group">
-                  <label>Modelo do notebook</label>
-                  <input name="modelo_notebook" value={form.modelo_notebook} onChange={handleChange} placeholder="HP EliteBook 840" />
-                </div>
-                <button type="submit" className="btn btn-primary btn-full" disabled={sending}>
-                  {sending ? 'Criando...' : 'Criar Link de Registro'}
-                </button>
-              </form>
             </div>
           </div>
 
           <div className="split-right">
-            <h3>Destinatários ({destinatarios.length})</h3>
+            <h3>Links Gerados ({links.length})</h3>
             <div className="table-wrapper">
               <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>Nome</th>
-                    <th>Email</th>
-                    <th>Serial</th>
+                    <th>Link</th>
                     <th>Status</th>
+                    <th>Criado em</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {destinatarios.length === 0 ? (
-                    <tr><td colSpan="4" className="empty">Nenhum destinatário cadastrado</td></tr>
+                  {links.length === 0 ? (
+                    <tr><td colSpan="3" className="empty">Nenhum link gerado</td></tr>
                   ) : (
-                    destinatarios.map(r => (
+                    links.toReversed().map(r => (
                       <tr key={r.id}>
-                        <td>{r.nome}</td>
-                        <td>{r.email}</td>
-                        <td><code>{r.serial}</code></td>
+                        <td>
+                          <code style={{ fontSize: 11 }}>
+                            {`${window.location.origin}/registrar/${r.token}`}
+                          </code>
+                        </td>
                         <td>
                           <span className={`status-badge ${r.enviado_em ? 'status-ok' : 'status-pendente'}`}>
-                            {r.enviado_em ? 'Enviado' : 'Pendente'}
+                            {r.enviado_em ? 'Registrado' : 'Pendente'}
                           </span>
+                        </td>
+                        <td style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                          {new Date(r.criado_em).toLocaleString('pt-BR')}
                         </td>
                       </tr>
                     ))

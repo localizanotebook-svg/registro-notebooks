@@ -229,38 +229,21 @@ async function handleListRegistros(event) {
 }
 
 async function handleEnviarLink(event) {
-  const { nome, email, serial, modelo_notebook } = getBody(event)
-
-  if (!nome || !email || !serial) {
-    return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
-  }
-
   const client = getDb()
-
-  const serialCheck = await client.execute({
-    sql: 'SELECT id FROM registros WHERE serial = ?',
-    args: [serial],
-  })
-
-  if (serialCheck.rows.length > 0) {
-    return json({ error: 'Este número de série já foi cadastrado no sistema' }, 409)
-  }
-
   const token = uuidv4()
 
   await client.execute({
     sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook, enviado_em)
-    VALUES (?, ?, ?, '', ?, ?, NULL)`,
-    args: [token, nome, email, serial, modelo_notebook || null],
+    VALUES (?, '', '', '', ?, NULL, NULL)`,
+    args: [token, token],
   })
 
   const link = `${SITE_URL}/registrar/${token}`
 
   return json({
     sucesso: true,
-    mensagem: 'Registro criado com sucesso!',
+    mensagem: 'Link gerado com sucesso!',
     link,
     token,
-    destinatario: { nome, email, serial },
   })
 }

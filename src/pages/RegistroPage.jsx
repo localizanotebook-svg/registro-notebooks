@@ -22,9 +22,8 @@ export default function RegistroPage() {
   const [form, setForm] = useState({
     nome: '',
     email: '',
-    celular: '',
     serial: '',
-    modelo_notebook: '',
+    modelo_notebook: 'EliteBook 645 G11 da HP',
     foto1_url: '',
     foto2_url: '',
     foto3_url: '',
@@ -32,6 +31,13 @@ export default function RegistroPage() {
     com_mochila: false,
     com_carregador: false,
     setor: '',
+    assinatura_nome: '',
+    assinatura_matricula: '',
+    tipo_atuacao: '',
+    endereco_rua: '',
+    endereco_bairro: '',
+    endereco_cidade: '',
+    endereco_cep: '',
   })
 
   useEffect(() => {
@@ -50,9 +56,11 @@ export default function RegistroPage() {
 
   function resetForm() {
     setForm({
-      nome: '', email: '', celular: '', serial: '', modelo_notebook: '',
+      nome: '', email: '', serial: '', modelo_notebook: 'EliteBook 645 G11 da HP',
       foto1_url: '', foto2_url: '', foto3_url: '', observacao: '',
       com_mochila: false, com_carregador: false, setor: '',
+      assinatura_nome: '', assinatura_matricula: '', tipo_atuacao: '',
+      endereco_rua: '', endereco_bairro: '', endereco_cidade: '', endereco_cep: '',
     })
     setPreviews([null, null, null])
     setError('')
@@ -187,24 +195,63 @@ export default function RegistroPage() {
           </div>
 
           <div className="form-group">
-            <label>Celular *</label>
-            <input name="celular" value={form.celular} onChange={handleChange} required placeholder="(31) 99999-9999" />
-          </div>
-
-          <div className="form-group">
             <label>Número de série do notebook *</label>
             <input name="serial" value={form.serial} onChange={handleChange} required placeholder="Ex: 5CGXXXX" />
           </div>
 
           <div className="form-group">
             <label>Modelo do notebook</label>
-            <input name="modelo_notebook" value={form.modelo_notebook} onChange={handleChange} placeholder="Ex: HP EliteBook 840" />
+            <input name="modelo_notebook" value={form.modelo_notebook} onChange={handleChange} required disabled style={{ background: '#f3f4f6', cursor: 'not-allowed' }} />
           </div>
 
           <div className="form-group">
             <label>Setor</label>
             <input name="setor" value={form.setor} onChange={handleChange} placeholder="Ex: TI, RH, Financeiro..." />
           </div>
+
+          <div className="form-group">
+            <label>Tipo de Atuação *</label>
+            <select name="tipo_atuacao" value={form.tipo_atuacao} onChange={handleChange} required className="form-select">
+              <option value="">Selecione...</option>
+              <option value="Home Office">Home Office</option>
+              <option value="Híbrido">Híbrido</option>
+              <option value="Presencial Fixo">Presencial Fixo</option>
+            </select>
+          </div>
+
+          <fieldset className="form-fieldset">
+            <legend>Endereço Completo</legend>
+            <div className="form-group">
+              <label>Rua *</label>
+              <input name="endereco_rua" value={form.endereco_rua} onChange={handleChange} required placeholder="Rua, número, complemento" />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Bairro *</label>
+                <input name="endereco_bairro" value={form.endereco_bairro} onChange={handleChange} required placeholder="Bairro" />
+              </div>
+              <div className="form-group">
+                <label>Cidade *</label>
+                <input name="endereco_cidade" value={form.endereco_cidade} onChange={handleChange} required placeholder="Belo Horizonte" />
+              </div>
+              <div className="form-group form-group-sm">
+                <label>CEP *</label>
+                <input name="endereco_cep" value={form.endereco_cep} onChange={handleChange} required placeholder="30000-000" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="form-fieldset">
+            <legend>Assinatura de Recebimento</legend>
+            <div className="form-group">
+              <label>Nome completo (assinatura digital) *</label>
+              <input name="assinatura_nome" value={form.assinatura_nome} onChange={handleChange} required placeholder="Digite seu nome completo" />
+            </div>
+            <div className="form-group">
+              <label>Matrícula *</label>
+              <input name="assinatura_matricula" value={form.assinatura_matricula} onChange={handleChange} required placeholder="Digite sua matrícula" />
+            </div>
+          </fieldset>
 
           <div className="form-group">
             <label>Acessórios</label>

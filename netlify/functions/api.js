@@ -147,7 +147,7 @@ async function initDb() {
       token TEXT UNIQUE NOT NULL,
       nome TEXT NOT NULL,
       email TEXT NOT NULL,
-      celular TEXT NOT NULL,
+      celular TEXT NOT NULL DEFAULT '',
       serial TEXT UNIQUE NOT NULL,
       modelo_notebook TEXT,
       foto1_url TEXT,
@@ -157,11 +157,18 @@ async function initDb() {
       com_mochila INTEGER DEFAULT 0,
       com_carregador INTEGER DEFAULT 0,
       setor TEXT,
+      assinatura_nome TEXT,
+      assinatura_matricula TEXT,
+      tipo_atuacao TEXT,
+      endereco_rua TEXT,
+      endereco_bairro TEXT,
+      endereco_cidade TEXT,
+      endereco_cep TEXT,
       enviado_em TEXT,
       criado_em TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `)
-  for (const col of ['observacao', 'com_mochila', 'com_carregador', 'setor']) {
+  for (const col of ['observacao', 'com_mochila', 'com_carregador', 'setor', 'assinatura_nome', 'assinatura_matricula', 'tipo_atuacao', 'endereco_rua', 'endereco_bairro', 'endereco_cidade', 'endereco_cep']) {
     try {
       await client.execute(`ALTER TABLE registros ADD COLUMN ${col} TEXT`)
     } catch {}
@@ -198,10 +205,10 @@ async function handleValidarToken(event) {
 }
 
 async function handleRegistrar(event) {
-  const { token, nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor } = getBody(event)
+  const { token, nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
-  if (!token || !nome || !email || !celular || !serial) {
-    return json({ error: 'Campos obrigatórios: token, nome, email, celular, serial' }, 400)
+  if (!token || !nome || !email || !serial) {
+    return json({ error: 'Campos obrigatórios: token, nome, email, serial' }, 400)
   }
 
   const client = getDb()
@@ -233,22 +240,24 @@ async function handleRegistrar(event) {
 
   await client.execute({
     sql: `UPDATE registros SET
-      nome = ?, email = ?, celular = ?, serial = ?,
+      nome = ?, email = ?, serial = ?,
       modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?,
       observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?,
+      assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
+      endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?,
       enviado_em = CURRENT_TIMESTAMP
     WHERE token = ?`,
-    args: [nome, email, celular, serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, token],
+    args: [nome, email, serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, token],
   })
 
   return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
 }
 
 async function handleRegistrarPublico(event) {
-  const { nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor } = getBody(event)
+  const { nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
-  if (!nome || !email || !celular || !serial) {
-    return json({ error: 'Campos obrigatórios: nome, email, celular, serial' }, 400)
+  if (!nome || !email || !serial) {
+    return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
   }
 
   const client = getDb()
@@ -268,12 +277,16 @@ async function handleRegistrarPublico(event) {
   const token = uuidv4()
 
   await client.execute({
-    sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook,
-      foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor, enviado_em)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-    args: [token, nome, email, celular, serial, modelo_notebook || null,
+    sql: `INSERT INTO registros (token, nome, email, serial, modelo_notebook,
+      foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor,
+      assinatura_nome, assinatura_matricula, tipo_atuacao,
+      endereco_rua, endereco_bairro, endereco_cidade, endereco_cep, enviado_em)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    args: [token, nome, email, serial, modelo_notebook || null,
       foto1_url || null, foto2_url || null, foto3_url || null,
-      observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null],
+      observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null,
+      assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null,
+      endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null],
   })
 
   return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
@@ -302,9 +315,9 @@ async function handleListRegistros(event) {
   const args = []
 
   if (busca) {
-    sql += ' AND (nome LIKE ? OR email LIKE ? OR serial LIKE ?)'
+    sql += ' AND (nome LIKE ? OR email LIKE ? OR serial LIKE ? OR assinatura_matricula LIKE ?)'
     const term = `%${busca}%`
-    args.push(term, term, term)
+    args.push(term, term, term, term)
   }
 
   if (status === 'pendente') {
@@ -324,8 +337,8 @@ async function handleEnviarLink(event) {
   const token = uuidv4()
 
   await client.execute({
-    sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook, enviado_em)
-    VALUES (?, '', '', '', ?, NULL, NULL)`,
+    sql: `INSERT INTO registros (token, nome, email, serial, modelo_notebook, enviado_em)
+    VALUES (?, '', '', ?, NULL, NULL)`,
     args: [token, token],
   })
 
@@ -360,10 +373,10 @@ async function handleGetRegistro(event, id) {
 }
 
 async function handleEditRegistro(event, id) {
-  const { nome, email, celular, serial, modelo_notebook, observacao, com_mochila, com_carregador, setor } = getBody(event)
+  const { nome, email, serial, modelo_notebook, observacao, com_mochila, com_carregador, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
-  if (!nome || !email || !celular || !serial) {
-    return json({ error: 'Campos obrigatórios: nome, email, celular, serial' }, 400)
+  if (!nome || !email || !serial) {
+    return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
   }
 
   const client = getDb()
@@ -378,10 +391,12 @@ async function handleEditRegistro(event, id) {
   }
 
   await client.execute({
-    sql: `UPDATE registros SET nome = ?, email = ?, celular = ?, serial = ?,
-      modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?
+    sql: `UPDATE registros SET nome = ?, email = ?, serial = ?,
+      modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?,
+      assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
+      endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?
     WHERE id = ?`,
-    args: [nome, email, celular, serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, id],
+    args: [nome, email, serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, id],
   })
 
   return json({ sucesso: true, mensagem: 'Registro atualizado com sucesso!' })

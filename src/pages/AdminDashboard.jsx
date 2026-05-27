@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listarRegistros, getRegistro, editarRegistro, deletarRegistro, alterarSenha } from '../lib/api'
+import * as XLSX from 'xlsx'
 
 const TOTAL_NOTEBOOKS = 2700
 
@@ -70,10 +71,6 @@ function DetailModal({ registro, onClose, onEdit }) {
             <span className="detail-value">{registro.email}</span>
           </div>
           <div className="detail-field">
-            <span className="detail-label">Celular</span>
-            <span className="detail-value">{registro.celular}</span>
-          </div>
-          <div className="detail-field">
             <span className="detail-label">Serial</span>
             <span className="detail-value"><code>{registro.serial}</code></span>
           </div>
@@ -84,6 +81,24 @@ function DetailModal({ registro, onClose, onEdit }) {
           <div className="detail-field">
             <span className="detail-label">Setor</span>
             <span className="detail-value">{registro.setor || '-'}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Tipo de Atuação</span>
+            <span className="detail-value">{registro.tipo_atuacao || '-'}</span>
+          </div>
+          <div className="detail-field" style={{ gridColumn: '1 / -1' }}>
+            <span className="detail-label">Endereço</span>
+            <span className="detail-value">
+              {[registro.endereco_rua, registro.endereco_bairro, registro.endereco_cidade, registro.endereco_cep].filter(Boolean).join(', ') || '-'}
+            </span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Assinatura</span>
+            <span className="detail-value">{registro.assinatura_nome || '-'}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Matrícula</span>
+            <span className="detail-value">{registro.assinatura_matricula || '-'}</span>
           </div>
           <div className="detail-field">
             <span className="detail-label">Acessórios</span>
@@ -133,7 +148,7 @@ function DetailModal({ registro, onClose, onEdit }) {
 }
 
 function EditModal({ registro, onClose, onSave }) {
-  const [form, setForm] = useState({ nome: '', email: '', celular: '', serial: '', modelo_notebook: '', setor: '', observacao: '', com_mochila: false, com_carregador: false })
+  const [form, setForm] = useState({ nome: '', email: '', serial: '', modelo_notebook: '', setor: '', observacao: '', com_mochila: false, com_carregador: false, assinatura_nome: '', assinatura_matricula: '', tipo_atuacao: '', endereco_rua: '', endereco_bairro: '', endereco_cidade: '', endereco_cep: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -142,13 +157,19 @@ function EditModal({ registro, onClose, onSave }) {
       setForm({
         nome: registro.nome || '',
         email: registro.email || '',
-        celular: registro.celular || '',
         serial: registro.serial || '',
         modelo_notebook: registro.modelo_notebook || '',
         setor: registro.setor || '',
         observacao: registro.observacao || '',
         com_mochila: !!Number(registro.com_mochila),
         com_carregador: !!Number(registro.com_carregador),
+        assinatura_nome: registro.assinatura_nome || '',
+        assinatura_matricula: registro.assinatura_matricula || '',
+        tipo_atuacao: registro.tipo_atuacao || '',
+        endereco_rua: registro.endereco_rua || '',
+        endereco_bairro: registro.endereco_bairro || '',
+        endereco_cidade: registro.endereco_cidade || '',
+        endereco_cep: registro.endereco_cep || '',
       })
     }
   }, [registro])
@@ -185,10 +206,6 @@ function EditModal({ registro, onClose, onSave }) {
             <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
           </div>
           <div className="form-group">
-            <label>Celular</label>
-            <input value={form.celular} onChange={e => setForm({ ...form, celular: e.target.value })} required />
-          </div>
-          <div className="form-group">
             <label>Serial</label>
             <input value={form.serial} onChange={e => setForm({ ...form, serial: e.target.value })} required />
           </div>
@@ -199,6 +216,39 @@ function EditModal({ registro, onClose, onSave }) {
           <div className="form-group">
             <label>Setor</label>
             <input value={form.setor} onChange={e => setForm({ ...form, setor: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label>Tipo de Atuação</label>
+            <select value={form.tipo_atuacao} onChange={e => setForm({ ...form, tipo_atuacao: e.target.value })} className="form-select">
+              <option value="">Selecione...</option>
+              <option value="Home Office">Home Office</option>
+              <option value="Híbrido">Híbrido</option>
+              <option value="Presencial Fixo">Presencial Fixo</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Endereço (Rua)</label>
+            <input value={form.endereco_rua} onChange={e => setForm({ ...form, endereco_rua: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label>Bairro</label>
+            <input value={form.endereco_bairro} onChange={e => setForm({ ...form, endereco_bairro: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label>Cidade</label>
+            <input value={form.endereco_cidade} onChange={e => setForm({ ...form, endereco_cidade: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label>CEP</label>
+            <input value={form.endereco_cep} onChange={e => setForm({ ...form, endereco_cep: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label>Assinatura (Nome)</label>
+            <input value={form.assinatura_nome} onChange={e => setForm({ ...form, assinatura_nome: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label>Matrícula</label>
+            <input value={form.assinatura_matricula} onChange={e => setForm({ ...form, assinatura_matricula: e.target.value })} />
           </div>
           <div className="form-group">
             <label>Acessórios</label>
@@ -396,24 +446,31 @@ export default function AdminDashboard() {
   function handleDeleteClick(r, e) { e.stopPropagation(); setDeleteRegistro(r) }
   function handleLogout() { localStorage.removeItem('admin_token'); navigate('/admin/login') }
 
-  function exportCSV() {
-    const headers = ['Nome', 'Email', 'Celular', 'Serial', 'Modelo', 'Setor', 'Mochila', 'Carregador', 'Observações', 'Data', 'Status']
-    const rows = filteredRegistros.map(r => [
-      r.nome, r.email, r.celular, r.serial, r.modelo_notebook || '', r.setor || '',
-      Number(r.com_mochila) ? 'Sim' : 'Não', Number(r.com_carregador) ? 'Sim' : 'Não',
-      r.observacao || '', r.enviado_em || r.criado_em,
-      r.enviado_em ? 'Registrado' : 'Pendente',
-    ])
-    const csv = [headers, ...rows].map(row =>
-      row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')
-    ).join('\n')
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `registros_${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+  function exportXLSX() {
+    const headers = ['Nome', 'Email', 'Serial', 'Modelo', 'Setor', 'Tipo de Atuação', 'Endereço (Rua)', 'Bairro', 'Cidade', 'CEP', 'Mochila', 'Carregador', 'Assinatura', 'Matrícula', 'Observações', 'Data', 'Status']
+    const data = filteredRegistros.map(r => ({
+      'Nome': r.nome,
+      'Email': r.email,
+      'Serial': r.serial,
+      'Modelo': r.modelo_notebook || '',
+      'Setor': r.setor || '',
+      'Tipo de Atuação': r.tipo_atuacao || '',
+      'Endereço (Rua)': r.endereco_rua || '',
+      'Bairro': r.endereco_bairro || '',
+      'Cidade': r.endereco_cidade || '',
+      'CEP': r.endereco_cep || '',
+      'Mochila': Number(r.com_mochila) ? 'Sim' : 'Não',
+      'Carregador': Number(r.com_carregador) ? 'Sim' : 'Não',
+      'Assinatura': r.assinatura_nome || '',
+      'Matrícula': r.assinatura_matricula || '',
+      'Observações': r.observacao || '',
+      'Data': r.enviado_em || r.criado_em,
+      'Status': r.enviado_em ? 'Registrado' : 'Pendente',
+    }))
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Registros')
+    XLSX.writeFile(wb, `registros_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
   function acessoriosText(r) {
@@ -491,7 +548,7 @@ export default function AdminDashboard() {
               </div>
               <div className="toolbar-right">
                 <span className="reg-count">{filteredRegistros.length} registro(s)</span>
-                <button className="btn btn-outline btn-sm" onClick={exportCSV}>Exportar CSV</button>
+                <button className="btn btn-outline btn-sm" onClick={exportXLSX}>Exportar XLSX</button>
               </div>
             </div>
 
@@ -501,10 +558,10 @@ export default function AdminDashboard() {
                   <tr>
                     <th>Nome</th>
                     <th>Email</th>
-                    <th>Celular</th>
                     <th>Serial</th>
                     <th>Modelo</th>
                     <th>Setor</th>
+                    <th>Atuação</th>
                     <th>Acessórios</th>
                     <th>Observações</th>
                     <th>Data</th>
@@ -521,10 +578,10 @@ export default function AdminDashboard() {
                       <tr key={r.id} className="clickable-row" onClick={() => handleRowClick(r)}>
                         <td className="cell-name">{r.nome || <span className="empty-field">Aguardando</span>}</td>
                         <td>{r.email || <span className="empty-field">-</span>}</td>
-                        <td>{r.celular || <span className="empty-field">-</span>}</td>
                         <td><code>{r.serial}</code></td>
                         <td>{r.modelo_notebook || <span className="empty-field">-</span>}</td>
                         <td style={{ fontSize: 13 }}>{r.setor || <span className="empty-field">-</span>}</td>
+                        <td style={{ fontSize: 13 }}>{r.tipo_atuacao || <span className="empty-field">-</span>}</td>
                         <td style={{ fontSize: 12 }}>{acessoriosText(r)}</td>
                         <td style={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {r.observacao || <span className="empty-field">-</span>}

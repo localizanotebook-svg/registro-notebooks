@@ -1,8 +1,21 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listarRegistros, getRegistro, editarRegistro, deletarRegistro } from '../lib/api'
 
 const TOTAL_NOTEBOOKS = 2700
+
+function Toast({ message, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 5000)
+    return () => clearTimeout(t)
+  }, [onClose])
+  return (
+    <div className="toast">
+      <span>{message}</span>
+      <button className="toast-close" onClick={onClose}>&times;</button>
+    </div>
+  )
+}
 
 function DetailModal({ registro, onClose, onEdit }) {
   if (!registro) return null
@@ -36,21 +49,28 @@ function DetailModal({ registro, onClose, onEdit }) {
             <span className="detail-value">{registro.modelo_notebook || '-'}</span>
           </div>
           <div className="detail-field">
+            <span className="detail-label">Acessórios</span>
+            <span className="detail-value">
+              {registro.com_mochila ? 'Mochila' : ''}
+              {registro.com_mochila && registro.com_carregador ? ', ' : ''}
+              {registro.com_carregador ? 'Carregador' : ''}
+              {!registro.com_mochila && !registro.com_carregador ? '-' : ''}
+            </span>
+          </div>
+          <div className="detail-field" style={{ gridColumn: '1 / -1' }}>
+            <span className="detail-label">Observações</span>
+            <span className="detail-value">{registro.observacao || '-'}</span>
+          </div>
+          <div className="detail-field">
             <span className="detail-label">Status</span>
             <span className={`status-badge ${registro.enviado_em ? 'status-ok' : 'status-pendente'}`}>
               {registro.enviado_em ? 'Registrado' : 'Pendente'}
             </span>
           </div>
           <div className="detail-field">
-            <span className="detail-label">Criado em</span>
-            <span className="detail-value">{new Date(registro.criado_em).toLocaleString('pt-BR')}</span>
+            <span className="detail-label">Registrado em</span>
+            <span className="detail-value">{registro.enviado_em ? new Date(registro.enviado_em).toLocaleString('pt-BR') : '-'}</span>
           </div>
-          {registro.enviado_em && (
-            <div className="detail-field">
-              <span className="detail-label">Registrado em</span>
-              <span className="detail-value">{new Date(registro.enviado_em).toLocaleString('pt-BR')}</span>
-            </div>
-          )}
         </div>
 
         {fotos.length > 0 && (
@@ -67,9 +87,7 @@ function DetailModal({ registro, onClose, onEdit }) {
         )}
 
         <div className="modal-actions">
-          <button className="btn btn-sm" onClick={() => { onEdit(registro); onClose() }}>
-            Editar
-          </button>
+          <button className="btn btn-sm" onClick={() => { onEdit(registro); onClose() }}>Editar</button>
           <button className="btn btn-sm btn-outline" onClick={onClose}>Fechar</button>
         </div>
       </div>
@@ -78,13 +96,7 @@ function DetailModal({ registro, onClose, onEdit }) {
 }
 
 function EditModal({ registro, onClose, onSave }) {
-  const [form, setForm] = useState({
-    nome: registro?.nome || '',
-    email: registro?.email || '',
-    celular: registro?.celular || '',
-    serial: registro?.serial || '',
-    modelo_notebook: registro?.modelo_notebook || '',
-  })
+  const [form, setForm] = useState({ nome: '', email: '', celular: '', serial: '', modelo_notebook: '', observacao: '', com_mochila: false, com_carregador: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -96,6 +108,9 @@ function EditModal({ registro, onClose, onSave }) {
         celular: registro.celular || '',
         serial: registro.serial || '',
         modelo_notebook: registro.modelo_notebook || '',
+        observacao: registro.observacao || '',
+        com_mochila: !!Number(registro.com_mochila),
+        com_carregador: !!Number(registro.com_carregador),
       })
     }
   }, [registro])
@@ -121,9 +136,7 @@ function EditModal({ registro, onClose, onSave }) {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>&times;</button>
         <h2 className="modal-title">Editar Registro</h2>
-
         {error && <div className="alert alert-error">{error}</div>}
-
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Nome</label>
@@ -145,10 +158,25 @@ function EditModal({ registro, onClose, onSave }) {
             <label>Modelo</label>
             <input value={form.modelo_notebook} onChange={e => setForm({ ...form, modelo_notebook: e.target.value })} />
           </div>
+          <div className="form-group">
+            <label>Acessórios</label>
+            <div className="checkbox-group" style={{ flexDirection: 'row' }}>
+              <label className="checkbox-label">
+                <input type="checkbox" checked={form.com_mochila} onChange={e => setForm({ ...form, com_mochila: e.target.checked })} />
+                <span>Mochila</span>
+              </label>
+              <label className="checkbox-label">
+                <input type="checkbox" checked={form.com_carregador} onChange={e => setForm({ ...form, com_carregador: e.target.checked })} />
+                <span>Carregador</span>
+              </label>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Observações</label>
+            <textarea value={form.observacao} onChange={e => setForm({ ...form, observacao: e.target.value })} rows={3} />
+          </div>
           <div className="modal-actions">
-            <button type="submit" className="btn btn-sm" disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
+            <button type="submit" className="btn btn-sm" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
             <button type="button" className="btn btn-sm btn-outline" onClick={onClose}>Cancelar</button>
           </div>
         </form>
@@ -206,27 +234,32 @@ export default function AdminDashboard() {
   const [detailRegistro, setDetailRegistro] = useState(null)
   const [editRegistro, setEditRegistro] = useState(null)
   const [deleteRegistro, setDeleteRegistro] = useState(null)
+  const [toast, setToast] = useState(null)
+  const prevCount = useRef(0)
   const navigate = useNavigate()
   const token = localStorage.getItem('admin_token')
 
   const fetchRegistros = useCallback(async () => {
     if (!token) return
-    setLoading(true)
     const data = await listarRegistros(token)
     if (data.registros) {
+      const registrados = data.registros.filter(r => r.enviado_em).length
+      if (prevCount.current > 0 && registrados > prevCount.current) {
+        setToast('Novo registro recebido!')
+      }
+      prevCount.current = registrados
       setAllRegistros(data.registros)
     } else {
       setError(data.error || 'Erro ao carregar')
     }
-    setLoading(false)
   }, [token])
 
   useEffect(() => {
-    if (!token) {
-      navigate('/admin/login')
-      return
-    }
-    fetchRegistros()
+    if (!token) { navigate('/admin/login'); return }
+    setLoading(true)
+    fetchRegistros().then(() => setLoading(false))
+    const interval = setInterval(fetchRegistros, 30000)
+    return () => clearInterval(interval)
   }, [token, navigate, fetchRegistros])
 
   const stats = useMemo(() => {
@@ -247,11 +280,8 @@ export default function AdminDashboard() {
         (r.email || '').toLowerCase().includes(term)
       )
     }
-    if (statusFilter === 'pendente') {
-      list = list.filter(r => !r.enviado_em)
-    } else if (statusFilter === 'registrado') {
-      list = list.filter(r => r.enviado_em)
-    }
+    if (statusFilter === 'pendente') list = list.filter(r => !r.enviado_em)
+    else if (statusFilter === 'registrado') list = list.filter(r => r.enviado_em)
     return list
   }, [allRegistros, busca, statusFilter])
 
@@ -260,30 +290,16 @@ export default function AdminDashboard() {
     if (data.registro) setDetailRegistro(data.registro)
   }
 
-  function handleEditClick(r, e) {
-    e.stopPropagation()
-    setEditRegistro(r)
-  }
-
-  function handleDeleteClick(r, e) {
-    e.stopPropagation()
-    setDeleteRegistro(r)
-  }
-
-  function handleLogout() {
-    localStorage.removeItem('admin_token')
-    navigate('/admin/login')
-  }
+  function handleEditClick(r, e) { e.stopPropagation(); setEditRegistro(r) }
+  function handleDeleteClick(r, e) { e.stopPropagation(); setDeleteRegistro(r) }
+  function handleLogout() { localStorage.removeItem('admin_token'); navigate('/admin/login') }
 
   function exportCSV() {
-    const headers = ['Nome', 'Email', 'Celular', 'Serial', 'Modelo', 'Data', 'Status']
+    const headers = ['Nome', 'Email', 'Celular', 'Serial', 'Modelo', 'Mochila', 'Carregador', 'Observações', 'Data', 'Status']
     const rows = filteredRegistros.map(r => [
-      r.nome,
-      r.email,
-      r.celular,
-      r.serial,
-      r.modelo_notebook || '',
-      r.enviado_em || r.criado_em,
+      r.nome, r.email, r.celular, r.serial, r.modelo_notebook || '',
+      Number(r.com_mochila) ? 'Sim' : 'Não', Number(r.com_carregador) ? 'Sim' : 'Não',
+      r.observacao || '', r.enviado_em || r.criado_em,
       r.enviado_em ? 'Registrado' : 'Pendente',
     ])
     const csv = [headers, ...rows].map(row =>
@@ -298,13 +314,20 @@ export default function AdminDashboard() {
     URL.revokeObjectURL(url)
   }
 
+  function acessoriosText(r) {
+    const items = []
+    if (Number(r.com_mochila)) items.push('Mochila')
+    if (Number(r.com_carregador)) items.push('Carregador')
+    return items.length ? items.join(', ') : <span className="empty-field">-</span>
+  }
+
   return (
     <div className="admin-layout">
       <header className="admin-header">
         <div className="admin-header-content">
           <h1>Localiza &mdash; Registro de Notebooks</h1>
           <div className="admin-header-actions">
-            <button className="btn btn-sm" onClick={() => navigate('/admin/enviar')}>Gerar Link</button>
+            <button className="btn btn-sm" onClick={() => navigate('/admin/enviar')}>Links</button>
             <button className="btn btn-sm btn-outline" onClick={handleLogout}>Sair</button>
           </div>
         </div>
@@ -378,6 +401,8 @@ export default function AdminDashboard() {
                     <th>Celular</th>
                     <th>Serial</th>
                     <th>Modelo</th>
+                    <th>Acessórios</th>
+                    <th>Observações</th>
                     <th>Data</th>
                     <th>Fotos</th>
                     <th>Status</th>
@@ -386,7 +411,7 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {filteredRegistros.length === 0 ? (
-                    <tr><td colSpan="9" className="empty">Nenhum registro encontrado</td></tr>
+                    <tr><td colSpan="11" className="empty">Nenhum registro encontrado</td></tr>
                   ) : (
                     filteredRegistros.map(r => (
                       <tr key={r.id} className="clickable-row" onClick={() => handleRowClick(r)}>
@@ -395,6 +420,10 @@ export default function AdminDashboard() {
                         <td>{r.celular || <span className="empty-field">-</span>}</td>
                         <td><code>{r.serial}</code></td>
                         <td>{r.modelo_notebook || <span className="empty-field">-</span>}</td>
+                        <td style={{ fontSize: 12 }}>{acessoriosText(r)}</td>
+                        <td style={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {r.observacao || <span className="empty-field">-</span>}
+                        </td>
                         <td className="cell-date">{new Date(r.enviado_em || r.criado_em).toLocaleString('pt-BR')}</td>
                         <td>
                           <div className="foto-thumbs">
@@ -425,6 +454,8 @@ export default function AdminDashboard() {
         )}
       </main>
 
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+
       {selectedFoto && (
         <div className="overlay" onClick={() => setSelectedFoto(null)}>
           <div className="overlay-content" onClick={e => e.stopPropagation()}>
@@ -434,23 +465,9 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <DetailModal
-        registro={detailRegistro}
-        onClose={() => setDetailRegistro(null)}
-        onEdit={(r) => setEditRegistro(r)}
-      />
-
-      <EditModal
-        registro={editRegistro}
-        onClose={() => setEditRegistro(null)}
-        onSave={fetchRegistros}
-      />
-
-      <DeleteConfirm
-        registro={deleteRegistro}
-        onClose={() => setDeleteRegistro(null)}
-        onDeleted={fetchRegistros}
-      />
+      <DetailModal registro={detailRegistro} onClose={() => setDetailRegistro(null)} onEdit={(r) => setEditRegistro(r)} />
+      <EditModal registro={editRegistro} onClose={() => setEditRegistro(null)} onSave={fetchRegistros} />
+      <DeleteConfirm registro={deleteRegistro} onClose={() => setDeleteRegistro(null)} onDeleted={fetchRegistros} />
     </div>
   )
 }

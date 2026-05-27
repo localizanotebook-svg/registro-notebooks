@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { validarToken, registrarDados } from '../lib/api'
+import { validarToken, registrarDados, registrarPublico } from '../lib/api'
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
 export default function RegistroPage() {
   const { token } = useParams()
-  const [loading, setLoading] = useState(true)
-  const [valido, setValido] = useState(false)
+  const isPublico = token === 'unico' || token === 'publico'
+  const [loading, setLoading] = useState(!isPublico)
+  const [valido, setValido] = useState(isPublico)
   const [usado, setUsado] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -27,9 +28,13 @@ export default function RegistroPage() {
     foto1_url: '',
     foto2_url: '',
     foto3_url: '',
+    observacao: '',
+    com_mochila: false,
+    com_carregador: false,
   })
 
   useEffect(() => {
+    if (isPublico) return
     async function check() {
       const data = await validarToken(token)
       if (data.valido) {
@@ -40,10 +45,23 @@ export default function RegistroPage() {
       setLoading(false)
     }
     check()
-  }, [token])
+  }, [token, isPublico])
+
+  function resetForm() {
+    setForm({
+      nome: '', email: '', celular: '', serial: '', modelo_notebook: '',
+      foto1_url: '', foto2_url: '', foto3_url: '', observacao: '',
+      com_mochila: false, com_carregador: false,
+    })
+    setPreviews([null, null, null])
+    setError('')
+    setSuccess(false)
+    setSubmitting(false)
+  }
 
   function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value, type, checked } = e.target
+    setForm({ ...form, [name]: type === 'checkbox' ? checked : value })
   }
 
   async function handleUpload(index, inputRef) {
@@ -85,8 +103,8 @@ export default function RegistroPage() {
     const key = `foto${index + 1}_url`
     setForm(prev => ({ ...prev, [key]: '' }))
     setPreviews(prev => { const n = [...prev]; n[index] = null; return n })
-    cameraInputs[index].current && (cameraInputs[index].current.value = '')
-    galleryInputs[index].current && (galleryInputs[index].current.value = '')
+    if (cameraInputs[index].current) cameraInputs[index].current.value = ''
+    if (galleryInputs[index].current) galleryInputs[index].current.value = ''
   }
 
   async function handleSubmit(e) {
@@ -94,16 +112,22 @@ export default function RegistroPage() {
     setError('')
     setSubmitting(true)
 
-    const result = await registrarDados({ ...form, token })
+    const fn = isPublico ? registrarPublico : registrarDados
+    const body = isPublico ? form : { ...form, token }
+
+    const result = await fn(body)
     if (result.sucesso) {
       setSuccess(true)
+      if (isPublico) {
+        setTimeout(resetForm, 5000)
+      }
     } else {
       setError(result.error || 'Erro ao registrar')
     }
     setSubmitting(false)
   }
 
-  if (loading) {
+  if (!isPublico && loading) {
     return (
       <div className="page-center">
         <div className="spinner" />
@@ -112,7 +136,7 @@ export default function RegistroPage() {
     )
   }
 
-  if (!valido) {
+  if (!isPublico && !valido) {
     return (
       <div className="page-center">
         <div className="card error-card">
@@ -123,7 +147,7 @@ export default function RegistroPage() {
     )
   }
 
-  if (success) {
+  if (success && !isPublico) {
     return (
       <div className="page-center">
         <div className="card success-card">
@@ -143,6 +167,12 @@ export default function RegistroPage() {
         <p className="subtitle">Preencha seus dados e as informações do equipamento</p>
 
         {error && <div className="alert alert-error">{error}</div>}
+
+        {success && isPublico && (
+          <div className="alert alert-success" style={{ marginBottom: 16 }}>
+            Registro concluído com sucesso! Novo formulário será aberto em instantes...
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -171,25 +201,37 @@ export default function RegistroPage() {
           </div>
 
           <div className="form-group">
+            <label>Acessórios</label>
+            <div className="checkbox-group">
+              <label className="checkbox-label">
+                <input type="checkbox" name="com_mochila" checked={form.com_mochila} onChange={handleChange} />
+                <span>Mochila</span>
+              </label>
+              <label className="checkbox-label">
+                <input type="checkbox" name="com_carregador" checked={form.com_carregador} onChange={handleChange} />
+                <span>Carregador</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Observações (avarias, cabos faltando, etc.)</label>
+            <textarea
+              name="observacao"
+              value={form.observacao}
+              onChange={handleChange}
+              placeholder="Descreva qualquer avaria ou item faltante..."
+              rows={3}
+            />
+          </div>
+
+          <div className="form-group">
             <label>Fotos do equipamento (opcional, máx. 5MB cada)</label>
             <div className="fotos-grid">
               {[0, 1, 2].map(i => (
                 <div key={i} className="foto-upload">
-                  <input
-                    ref={cameraInputs[i]}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    hidden
-                    onChange={() => handleUpload(i, cameraInputs[i])}
-                  />
-                  <input
-                    ref={galleryInputs[i]}
-                    type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={() => handleUpload(i, galleryInputs[i])}
-                  />
+                  <input ref={cameraInputs[i]} type="file" accept="image/*" capture="environment" hidden onChange={() => handleUpload(i, cameraInputs[i])} />
+                  <input ref={galleryInputs[i]} type="file" accept="image/*" hidden onChange={() => handleUpload(i, galleryInputs[i])} />
                   {uploading[i] ? (
                     <div className="uploading"><div className="spinner-sm" /><span>Enviando...</span></div>
                   ) : previews[i] ? (
@@ -205,12 +247,8 @@ export default function RegistroPage() {
                   )}
                   {!previews[i] && !uploading[i] && (
                     <div className="foto-options">
-                      <button type="button" className="foto-option-btn" onClick={() => cameraInputs[i].current?.click()} title="Usar câmera">
-                        &#128247; Câmera
-                      </button>
-                      <button type="button" className="foto-option-btn" onClick={() => galleryInputs[i].current?.click()} title="Escolher da galeria">
-                        &#128193; Galeria
-                      </button>
+                      <button type="button" className="foto-option-btn" onClick={() => cameraInputs[i].current?.click()} title="Usar câmera">&#128247; Câmera</button>
+                      <button type="button" className="foto-option-btn" onClick={() => galleryInputs[i].current?.click()} title="Escolher da galeria">&#128193; Galeria</button>
                     </div>
                   )}
                 </div>

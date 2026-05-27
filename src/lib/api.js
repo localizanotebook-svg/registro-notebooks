@@ -14,6 +14,15 @@ export async function registrarDados(body) {
   return res.json()
 }
 
+export async function registrarPublico(body) {
+  const res = await fetch(`${API_BASE}/registrar-publico`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  return res.json()
+}
+
 export async function loginAdmin(username, password) {
   const res = await fetch(`${API_BASE}/admin/login`, {
     method: 'POST',

@@ -75,6 +75,10 @@ export async function handler(event) {
     return handleRegistrar(event)
   }
 
+  if (method === 'POST' && parts[0] === 'registrar-publico') {
+    return handleRegistrarPublico(event)
+  }
+
   if (parts[0] === 'admin') {
     if (method === 'POST' && parts[1] === 'login') {
       return handleAdminLogin(event)
@@ -124,16 +128,28 @@ async function initDb() {
       foto1_url TEXT,
       foto2_url TEXT,
       foto3_url TEXT,
+      observacao TEXT,
+      com_mochila INTEGER DEFAULT 0,
+      com_carregador INTEGER DEFAULT 0,
       enviado_em TEXT,
       criado_em TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `)
+  for (const col of ['observacao', 'com_mochila', 'com_carregador']) {
+    try {
+      await client.execute(`ALTER TABLE registros ADD COLUMN ${col} TEXT`)
+    } catch {}
+  }
 }
 
 async function handleValidarToken(event) {
   const token = event.queryStringParameters?.token
   if (!token) {
     return json({ error: 'Token não fornecido' }, 400)
+  }
+
+  if (token === 'unico' || token === 'publico') {
+    return json({ valido: true, publico: true })
   }
 
   const client = getDb()
@@ -155,7 +171,7 @@ async function handleValidarToken(event) {
 }
 
 async function handleRegistrar(event) {
-  const { token, nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url } = getBody(event)
+  const { token, nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador } = getBody(event)
 
   if (!token || !nome || !email || !celular || !serial) {
     return json({ error: 'Campos obrigatórios: token, nome, email, celular, serial' }, 400)
@@ -192,9 +208,45 @@ async function handleRegistrar(event) {
     sql: `UPDATE registros SET
       nome = ?, email = ?, celular = ?, serial = ?,
       modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?,
+      observacao = ?, com_mochila = ?, com_carregador = ?,
       enviado_em = CURRENT_TIMESTAMP
     WHERE token = ?`,
-    args: [nome, email, celular, serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, token],
+    args: [nome, email, celular, serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, token],
+  })
+
+  return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
+}
+
+async function handleRegistrarPublico(event) {
+  const { nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador } = getBody(event)
+
+  if (!nome || !email || !celular || !serial) {
+    return json({ error: 'Campos obrigatórios: nome, email, celular, serial' }, 400)
+  }
+
+  const client = getDb()
+
+  const serialResult = await client.execute({
+    sql: 'SELECT nome, criado_em FROM registros WHERE serial = ?',
+    args: [serial],
+  })
+
+  if (serialResult.rows.length > 0) {
+    const existing = serialResult.rows[0]
+    return json({
+      error: `Este equipamento já foi registrado em ${existing.criado_em} por ${existing.nome}`,
+    }, 409)
+  }
+
+  const token = uuidv4()
+
+  await client.execute({
+    sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook,
+      foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, enviado_em)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    args: [token, nome, email, celular, serial, modelo_notebook || null,
+      foto1_url || null, foto2_url || null, foto3_url || null,
+      observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0],
   })
 
   return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
@@ -257,6 +309,14 @@ async function handleEnviarLink(event) {
   })
 }
 
+function mapRow(r) {
+  return {
+    ...r,
+    com_mochila: Number(r.com_mochila || 0),
+    com_carregador: Number(r.com_carregador || 0),
+  }
+}
+
 async function handleGetRegistro(event, id) {
   const client = getDb()
   const result = await client.execute({
@@ -266,11 +326,11 @@ async function handleGetRegistro(event, id) {
   if (result.rows.length === 0) {
     return json({ error: 'Registro não encontrado' }, 404)
   }
-  return json({ registro: result.rows[0] })
+  return json({ registro: mapRow(result.rows[0]) })
 }
 
 async function handleEditRegistro(event, id) {
-  const { nome, email, celular, serial, modelo_notebook } = getBody(event)
+  const { nome, email, celular, serial, modelo_notebook, observacao, com_mochila, com_carregador } = getBody(event)
 
   if (!nome || !email || !celular || !serial) {
     return json({ error: 'Campos obrigatórios: nome, email, celular, serial' }, 400)
@@ -288,9 +348,10 @@ async function handleEditRegistro(event, id) {
   }
 
   await client.execute({
-    sql: `UPDATE registros SET nome = ?, email = ?, celular = ?, serial = ?, modelo_notebook = ?
+    sql: `UPDATE registros SET nome = ?, email = ?, celular = ?, serial = ?,
+      modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?
     WHERE id = ?`,
-    args: [nome, email, celular, serial, modelo_notebook || null, id],
+    args: [nome, email, celular, serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, id],
   })
 
   return json({ sucesso: true, mensagem: 'Registro atualizado com sucesso!' })

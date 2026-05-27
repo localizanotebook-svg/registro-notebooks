@@ -4,14 +4,47 @@ import { listarRegistros, getRegistro, editarRegistro, deletarRegistro, alterarS
 
 const TOTAL_NOTEBOOKS = 2700
 
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 800
+    osc.type = 'sine'
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.3)
+  } catch {}
+}
+
+function showBrowserNotification(title, body) {
+  if (!('Notification' in window)) return
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/favicon.ico' })
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(p => {
+      if (p === 'granted') new Notification(title, { body, icon: '/favicon.ico' })
+    })
+  }
+}
+
 function Toast({ message, onClose }) {
   useEffect(() => {
-    const t = setTimeout(onClose, 5000)
+    playNotificationSound()
+    showBrowserNotification('Localiza - Novo Registro', message)
+    const t = setTimeout(onClose, 6000)
     return () => clearTimeout(t)
   }, [onClose])
   return (
     <div className="toast">
-      <span>{message}</span>
+      <div className="toast-icon">&#128226;</div>
+      <div className="toast-body">
+        <div className="toast-title">Novo Registro!</div>
+        <div className="toast-msg">{message}</div>
+      </div>
       <button className="toast-close" onClick={onClose}>&times;</button>
     </div>
   )

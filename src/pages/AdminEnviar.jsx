@@ -58,7 +58,7 @@ export default function AdminEnviar() {
           <h1>Localiza - Gerenciar Links</h1>
           <div className="admin-header-actions">
             <button className="btn btn-sm" onClick={() => navigate('/admin')}>Dashboard</button>
-            <button className="btn btn-sm btn-outline" onClick={handleLogout}>Sair</button>
+            <button className="btn btn-sm btn-outline" onClick={() => { localStorage.removeItem('admin_token'); navigate('/admin/login') }}>Sair</button>
           </div>
         </div>
       </header>

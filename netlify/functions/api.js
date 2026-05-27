@@ -1,11 +1,32 @@
 import { createClient } from '@libsql/client'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
+import { createHash } from 'node:crypto'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'localiza-admin-secret-2024'
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
 const SITE_URL = process.env.SITE_URL || 'https://localizanotebook.netlify.app'
+
+function hashPassword(pwd) {
+  return createHash('sha256').update(pwd).digest('hex')
+}
+
+async function getAdminPassword() {
+  const client = getDb()
+  try {
+    const r = await client.execute("SELECT value FROM admin_settings WHERE key = 'password_hash'")
+    if (r.rows.length > 0) return r.rows[0].value
+  } catch {}
+  return hashPassword(ADMIN_PASSWORD)
+}
+
+async function setAdminPassword(pwd) {
+  const client = getDb()
+  const hashed = hashPassword(pwd)
+  await client.execute("DELETE FROM admin_settings WHERE key = 'password_hash'")
+  await client.execute("INSERT INTO admin_settings (key, value) VALUES ('password_hash', ?)", [hashed])
+}
 
 let db
 
@@ -105,6 +126,10 @@ export async function handler(event) {
     if (method === 'POST' && parts[1] === 'enviar-link') {
       return handleEnviarLink(event)
     }
+
+    if (method === 'POST' && parts[1] === 'alterar-senha') {
+      return handleAlterarSenha(event)
+    }
   }
 
   if (method === 'GET' && parts[0] === 'validar-token') {
@@ -140,6 +165,7 @@ async function initDb() {
       await client.execute(`ALTER TABLE registros ADD COLUMN ${col} TEXT`)
     } catch {}
   }
+  await client.execute(`CREATE TABLE IF NOT EXISTS admin_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`)
 }
 
 async function handleValidarToken(event) {
@@ -255,7 +281,10 @@ async function handleRegistrarPublico(event) {
 async function handleAdminLogin(event) {
   const { username, password } = getBody(event)
 
-  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+  const storedHash = await getAdminPassword()
+  const inputHash = hashPassword(password)
+
+  if (username !== ADMIN_USERNAME || inputHash !== storedHash) {
     return json({ error: 'Credenciais inválidas' }, 401)
   }
 
@@ -375,4 +404,25 @@ async function handleDeleteRegistro(event, id) {
   })
 
   return json({ sucesso: true, mensagem: 'Registro excluído com sucesso!' })
+}
+
+async function handleAlterarSenha(event) {
+  const { senha_atual, nova_senha } = getBody(event)
+
+  if (!senha_atual || !nova_senha) {
+    return json({ error: 'Campos obrigatórios: senha_atual, nova_senha' }, 400)
+  }
+
+  if (nova_senha.length < 6) {
+    return json({ error: 'A nova senha deve ter no mínimo 6 caracteres' }, 400)
+  }
+
+  const storedHash = await getAdminPassword()
+  if (hashPassword(senha_atual) !== storedHash) {
+    return json({ error: 'Senha atual incorreta' }, 401)
+  }
+
+  await setAdminPassword(nova_senha)
+
+  return json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' })
 }

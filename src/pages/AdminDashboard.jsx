@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listarRegistros, getRegistro, editarRegistro, deletarRegistro } from '../lib/api'
+import { listarRegistros, getRegistro, editarRegistro, deletarRegistro, alterarSenha } from '../lib/api'
 
 const TOTAL_NOTEBOOKS = 2700
 
@@ -224,6 +224,65 @@ function DeleteConfirm({ registro, onClose, onDeleted }) {
   )
 }
 
+function PasswordModal({ onClose }) {
+  const [senhaAtual, setSenhaAtual] = useState('')
+  const [novaSenha, setNovaSenha] = useState('')
+  const [confirmar, setConfirmar] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+
+    if (novaSenha.length < 6) { setError('A nova senha deve ter no mínimo 6 caracteres'); return }
+    if (novaSenha !== confirmar) { setError('As senhas não conferem'); return }
+
+    setSaving(true)
+    const data = await alterarSenha(localStorage.getItem('admin_token'), senhaAtual, novaSenha)
+    if (data.sucesso) {
+      setSuccess('Senha alterada com sucesso!')
+      setTimeout(onClose, 1500)
+    } else {
+      setError(data.error || 'Erro ao alterar senha')
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+        <button className="modal-close" onClick={onClose}>&times;</button>
+        <h2 className="modal-title">Alterar Senha</h2>
+
+        {error && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Senha atual</label>
+            <input type="password" value={senhaAtual} onChange={e => setSenhaAtual(e.target.value)} required placeholder="Digite a senha atual" />
+          </div>
+          <div className="form-group">
+            <label>Nova senha (mín. 6 caracteres)</label>
+            <input type="password" value={novaSenha} onChange={e => setNovaSenha(e.target.value)} required placeholder="Nova senha" />
+          </div>
+          <div className="form-group">
+            <label>Confirmar nova senha</label>
+            <input type="password" value={confirmar} onChange={e => setConfirmar(e.target.value)} required placeholder="Confirme a nova senha" />
+          </div>
+          <div className="modal-actions">
+            <button type="submit" className="btn btn-sm" disabled={saving}>{saving ? 'Alterando...' : 'Alterar Senha'}</button>
+            <button type="button" className="btn btn-sm btn-outline" onClick={onClose}>Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const [allRegistros, setAllRegistros] = useState([])
   const [busca, setBusca] = useState('')
@@ -234,6 +293,7 @@ export default function AdminDashboard() {
   const [detailRegistro, setDetailRegistro] = useState(null)
   const [editRegistro, setEditRegistro] = useState(null)
   const [deleteRegistro, setDeleteRegistro] = useState(null)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [toast, setToast] = useState(null)
   const prevCount = useRef(0)
   const navigate = useNavigate()
@@ -328,6 +388,7 @@ export default function AdminDashboard() {
           <h1>Localiza &mdash; Registro de Notebooks</h1>
           <div className="admin-header-actions">
             <button className="btn btn-sm" onClick={() => navigate('/admin/enviar')}>Links</button>
+            <button className="btn btn-sm btn-outline" onClick={() => setShowPasswordModal(true)}>Alterar Senha</button>
             <button className="btn btn-sm btn-outline" onClick={handleLogout}>Sair</button>
           </div>
         </div>
@@ -464,6 +525,8 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {showPasswordModal && <PasswordModal onClose={() => setShowPasswordModal(false)} />}
 
       <DetailModal registro={detailRegistro} onClose={() => setDetailRegistro(null)} onEdit={(r) => setEditRegistro(r)} />
       <EditModal registro={editRegistro} onClose={() => setEditRegistro(null)} onSave={fetchRegistros} />

@@ -78,3 +78,15 @@ export async function deletarRegistro(token, id) {
   })
   return res.json()
 }
+
+export async function alterarSenha(token, senha_atual, nova_senha) {
+  const res = await fetch(`${API_BASE}/admin/alterar-senha`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ senha_atual, nova_senha }),
+  })
+  return res.json()
+}

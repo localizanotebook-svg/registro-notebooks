@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 const JWT_SECRET = process.env.JWT_SECRET || 'localiza-admin-secret-2024'
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
-const SITE_URL = process.env.SITE_URL || 'https://registro-notebooks.netlify.app'
+const SITE_URL = process.env.SITE_URL || 'https://localizanotebook.netlify.app'
 
 let db
 

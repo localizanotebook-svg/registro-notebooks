@@ -12,6 +12,8 @@ export default function AdminEnviar() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [generatedLink, setGeneratedLink] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const fetchDestinatarios = useCallback(async () => {
     if (!token) return
@@ -35,17 +37,26 @@ export default function AdminEnviar() {
     e.preventDefault()
     setError('')
     setSuccess('')
+    setGeneratedLink('')
+    setCopied(false)
     setSending(true)
 
     const data = await enviarLink(token, form)
     if (data.sucesso) {
-      setSuccess('Link enviado com sucesso!')
+      setSuccess('Registro criado! Copie o link abaixo e envie para o destinatário.')
+      setGeneratedLink(data.link)
       setForm({ nome: '', email: '', serial: '', modelo_notebook: '' })
       await fetchDestinatarios()
     } else {
-      setError(data.error || 'Erro ao enviar link')
+      setError(data.error || 'Erro ao criar registro')
     }
     setSending(false)
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(generatedLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -69,6 +80,18 @@ export default function AdminEnviar() {
               {error && <div className="alert alert-error">{error}</div>}
               {success && <div className="alert alert-success">{success}</div>}
 
+              {generatedLink && (
+                <div className="link-box">
+                  <label>Link de registro gerado:</label>
+                  <div className="link-row">
+                    <input type="text" value={generatedLink} readOnly className="link-input" />
+                    <button type="button" className="btn btn-sm btn-primary" onClick={copyLink}>
+                      {copied ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Nome *</label>
@@ -87,7 +110,7 @@ export default function AdminEnviar() {
                   <input name="modelo_notebook" value={form.modelo_notebook} onChange={handleChange} placeholder="HP EliteBook 840" />
                 </div>
                 <button type="submit" className="btn btn-primary btn-full" disabled={sending}>
-                  {sending ? 'Enviando...' : 'Enviar Link por Email'}
+                  {sending ? 'Criando...' : 'Criar Link de Registro'}
                 </button>
               </form>
             </div>

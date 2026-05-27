@@ -1,5 +1,4 @@
 import { createClient } from '@libsql/client'
-import { Resend } from 'resend'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -255,36 +254,13 @@ async function handleEnviarLink(event) {
     args: [token, nome, email, serial, modelo_notebook || null],
   })
 
-  try {
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    const link = `${SITE_URL}/registrar/${token}`
+  const link = `${SITE_URL}/registrar/${token}`
 
-    await resend.emails.send({
-      from: 'Localiza <onboarding@resend.dev>',
-      to: email,
-      subject: 'Registro do seu Notebook HP - Localiza',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Olá, ${nome}!</h2>
-          <p>Seu notebook HP chegou! Para registrar o equipamento, clique no link abaixo:</p>
-          <p style="text-align: center; margin: 30px 0;">
-            <a href="${link}" style="background-color: #0047BB; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px; display: inline-block;">
-              Registrar Notebook
-            </a>
-          </p>
-          <p>Se o botão não funcionar, copie e cole este link no navegador:</p>
-          <p style="word-break: break-all; color: #0047BB;">${link}</p>
-          <p><strong>Número de série:</strong> ${serial}</p>
-          ${modelo_notebook ? `<p><strong>Modelo:</strong> ${modelo_notebook}</p>` : ''}
-          <hr style="margin: 30px 0;" />
-          <p style="color: #666; font-size: 12px;">Este é um email automático. Não responda.</p>
-        </div>
-      `,
-    })
-  } catch (err) {
-    console.error('Erro ao enviar email:', err)
-    return json({ error: 'Erro ao enviar email. Verifique as configurações do Resend.' }, 500)
-  }
-
-  return json({ sucesso: true, mensagem: 'Link enviado com sucesso!' })
+  return json({
+    sucesso: true,
+    mensagem: 'Registro criado com sucesso!',
+    link,
+    token,
+    destinatario: { nome, email, serial },
+  })
 }

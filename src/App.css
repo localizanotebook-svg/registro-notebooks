@@ -300,6 +300,118 @@ body {
   border-color: var(--primary);
 }
 
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--gray-300);
+}
+
+.stat-card.stat-total { border-left-color: var(--primary); }
+.stat-card.stat-ok { border-left-color: var(--success); }
+.stat-card.stat-pending { border-left-color: var(--warning); }
+.stat-card.stat-meta { border-left-color: var(--gray-500); }
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--gray-900);
+  line-height: 1.1;
+}
+
+.stat-card.stat-ok .stat-value { color: #166534; }
+.stat-card.stat-pending .stat-value { color: #92400e; }
+
+.stat-sub {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+/* Progress section */
+.progress-section {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.progress-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.progress-percent {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.progress-bar-bg {
+  height: 12px;
+  background: var(--gray-200);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #0055dd);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.progress-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+/* Empty field placeholder */
+.empty-field {
+  color: var(--gray-300);
+  font-style: italic;
+  font-size: 12px;
+}
+
+.cell-name {
+  font-weight: 500;
+}
+
+.cell-date {
+  white-space: nowrap;
+  font-size: 13px;
+}
+
 /* Admin layout */
 .admin-layout {
   min-height: 100vh;
@@ -605,7 +717,21 @@ body {
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-value {
+    font-size: 26px;
+  }
+
   .split-layout {
     grid-template-columns: 1fr;
   }

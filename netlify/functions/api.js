@@ -39,7 +39,7 @@ function json(data, status = 200) {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     },
     body: JSON.stringify(data),
   }
@@ -86,7 +86,16 @@ export async function handler(event) {
     }
 
     if (method === 'GET' && parts[1] === 'registros') {
+      if (parts[2]) return handleGetRegistro(event, parts[2])
       return handleListRegistros(event)
+    }
+
+    if (method === 'PUT' && parts[1] === 'registros' && parts[2]) {
+      return handleEditRegistro(event, parts[2])
+    }
+
+    if (method === 'DELETE' && parts[1] === 'registros' && parts[2]) {
+      return handleDeleteRegistro(event, parts[2])
     }
 
     if (method === 'POST' && parts[1] === 'enviar-link') {
@@ -246,4 +255,63 @@ async function handleEnviarLink(event) {
     link,
     token,
   })
+}
+
+async function handleGetRegistro(event, id) {
+  const client = getDb()
+  const result = await client.execute({
+    sql: 'SELECT * FROM registros WHERE id = ?',
+    args: [id],
+  })
+  if (result.rows.length === 0) {
+    return json({ error: 'Registro não encontrado' }, 404)
+  }
+  return json({ registro: result.rows[0] })
+}
+
+async function handleEditRegistro(event, id) {
+  const { nome, email, celular, serial, modelo_notebook } = getBody(event)
+
+  if (!nome || !email || !celular || !serial) {
+    return json({ error: 'Campos obrigatórios: nome, email, celular, serial' }, 400)
+  }
+
+  const client = getDb()
+
+  const existing = await client.execute({
+    sql: 'SELECT id FROM registros WHERE serial = ? AND id != ?',
+    args: [serial, id],
+  })
+
+  if (existing.rows.length > 0) {
+    return json({ error: 'Este número de série já está em uso por outro registro' }, 409)
+  }
+
+  await client.execute({
+    sql: `UPDATE registros SET nome = ?, email = ?, celular = ?, serial = ?, modelo_notebook = ?
+    WHERE id = ?`,
+    args: [nome, email, celular, serial, modelo_notebook || null, id],
+  })
+
+  return json({ sucesso: true, mensagem: 'Registro atualizado com sucesso!' })
+}
+
+async function handleDeleteRegistro(event, id) {
+  const client = getDb()
+
+  const result = await client.execute({
+    sql: 'SELECT id FROM registros WHERE id = ?',
+    args: [id],
+  })
+
+  if (result.rows.length === 0) {
+    return json({ error: 'Registro não encontrado' }, 404)
+  }
+
+  await client.execute({
+    sql: 'DELETE FROM registros WHERE id = ?',
+    args: [id],
+  })
+
+  return json({ sucesso: true, mensagem: 'Registro excluído com sucesso!' })
 }

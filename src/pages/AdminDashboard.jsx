@@ -1,8 +1,200 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listarRegistros } from '../lib/api'
+import { listarRegistros, getRegistro, editarRegistro, deletarRegistro } from '../lib/api'
 
 const TOTAL_NOTEBOOKS = 2700
+
+function DetailModal({ registro, onClose, onEdit }) {
+  if (!registro) return null
+  const fotos = [registro.foto1_url, registro.foto2_url, registro.foto3_url].filter(Boolean)
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content modal-lg" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>&times;</button>
+        <h2 className="modal-title">Detalhes do Registro</h2>
+
+        <div className="detail-grid">
+          <div className="detail-field">
+            <span className="detail-label">Nome</span>
+            <span className="detail-value">{registro.nome}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Email</span>
+            <span className="detail-value">{registro.email}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Celular</span>
+            <span className="detail-value">{registro.celular}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Serial</span>
+            <span className="detail-value"><code>{registro.serial}</code></span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Modelo</span>
+            <span className="detail-value">{registro.modelo_notebook || '-'}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Status</span>
+            <span className={`status-badge ${registro.enviado_em ? 'status-ok' : 'status-pendente'}`}>
+              {registro.enviado_em ? 'Registrado' : 'Pendente'}
+            </span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label">Criado em</span>
+            <span className="detail-value">{new Date(registro.criado_em).toLocaleString('pt-BR')}</span>
+          </div>
+          {registro.enviado_em && (
+            <div className="detail-field">
+              <span className="detail-label">Registrado em</span>
+              <span className="detail-value">{new Date(registro.enviado_em).toLocaleString('pt-BR')}</span>
+            </div>
+          )}
+        </div>
+
+        {fotos.length > 0 && (
+          <div className="detail-fotos">
+            <span className="detail-label">Fotos</span>
+            <div className="detail-fotos-grid">
+              {fotos.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                  <img src={url} alt={`Foto ${i + 1}`} className="detail-foto" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="modal-actions">
+          <button className="btn btn-sm" onClick={() => { onEdit(registro); onClose() }}>
+            Editar
+          </button>
+          <button className="btn btn-sm btn-outline" onClick={onClose}>Fechar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EditModal({ registro, onClose, onSave }) {
+  const [form, setForm] = useState({
+    nome: registro?.nome || '',
+    email: registro?.email || '',
+    celular: registro?.celular || '',
+    serial: registro?.serial || '',
+    modelo_notebook: registro?.modelo_notebook || '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (registro) {
+      setForm({
+        nome: registro.nome || '',
+        email: registro.email || '',
+        celular: registro.celular || '',
+        serial: registro.serial || '',
+        modelo_notebook: registro.modelo_notebook || '',
+      })
+    }
+  }, [registro])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    setSaving(true)
+    const data = await editarRegistro(localStorage.getItem('admin_token'), registro.id, form)
+    if (data.sucesso) {
+      onSave()
+      onClose()
+    } else {
+      setError(data.error || 'Erro ao atualizar')
+    }
+    setSaving(false)
+  }
+
+  if (!registro) return null
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>&times;</button>
+        <h2 className="modal-title">Editar Registro</h2>
+
+        {error && <div className="alert alert-error">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Nome</label>
+            <input value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} required />
+          </div>
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+          </div>
+          <div className="form-group">
+            <label>Celular</label>
+            <input value={form.celular} onChange={e => setForm({ ...form, celular: e.target.value })} required />
+          </div>
+          <div className="form-group">
+            <label>Serial</label>
+            <input value={form.serial} onChange={e => setForm({ ...form, serial: e.target.value })} required />
+          </div>
+          <div className="form-group">
+            <label>Modelo</label>
+            <input value={form.modelo_notebook} onChange={e => setForm({ ...form, modelo_notebook: e.target.value })} />
+          </div>
+          <div className="modal-actions">
+            <button type="submit" className="btn btn-sm" disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar'}
+            </button>
+            <button type="button" className="btn btn-sm btn-outline" onClick={onClose}>Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function DeleteConfirm({ registro, onClose, onDeleted }) {
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleDelete() {
+    setError('')
+    setDeleting(true)
+    const data = await deletarRegistro(localStorage.getItem('admin_token'), registro.id)
+    if (data.sucesso) {
+      onDeleted()
+      onClose()
+    } else {
+      setError(data.error || 'Erro ao excluir')
+    }
+    setDeleting(false)
+  }
+
+  if (!registro) return null
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+        <button className="modal-close" onClick={onClose}>&times;</button>
+        <h2 className="modal-title">Confirmar Exclusão</h2>
+        <p style={{ marginBottom: 16, color: 'var(--gray-600)' }}>
+          Tem certeza que deseja excluir o registro de <strong>{registro.nome}</strong>?
+        </p>
+        {error && <div className="alert alert-error">{error}</div>}
+        <div className="modal-actions">
+          <button className="btn btn-sm btn-danger" onClick={handleDelete} disabled={deleting}>
+            {deleting ? 'Excluindo...' : 'Excluir'}
+          </button>
+          <button className="btn btn-sm btn-outline" onClick={onClose}>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function AdminDashboard() {
   const [allRegistros, setAllRegistros] = useState([])
@@ -11,6 +203,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedFoto, setSelectedFoto] = useState(null)
+  const [detailRegistro, setDetailRegistro] = useState(null)
+  const [editRegistro, setEditRegistro] = useState(null)
+  const [deleteRegistro, setDeleteRegistro] = useState(null)
   const navigate = useNavigate()
   const token = localStorage.getItem('admin_token')
 
@@ -44,7 +239,6 @@ export default function AdminDashboard() {
 
   const filteredRegistros = useMemo(() => {
     let list = allRegistros
-
     if (busca) {
       const term = busca.toLowerCase()
       list = list.filter(r =>
@@ -53,15 +247,28 @@ export default function AdminDashboard() {
         (r.email || '').toLowerCase().includes(term)
       )
     }
-
     if (statusFilter === 'pendente') {
       list = list.filter(r => !r.enviado_em)
     } else if (statusFilter === 'registrado') {
       list = list.filter(r => r.enviado_em)
     }
-
     return list
   }, [allRegistros, busca, statusFilter])
+
+  async function handleRowClick(r) {
+    const data = await getRegistro(token, r.id)
+    if (data.registro) setDetailRegistro(data.registro)
+  }
+
+  function handleEditClick(r, e) {
+    e.stopPropagation()
+    setEditRegistro(r)
+  }
+
+  function handleDeleteClick(r, e) {
+    e.stopPropagation()
+    setDeleteRegistro(r)
+  }
 
   function handleLogout() {
     localStorage.removeItem('admin_token')
@@ -79,11 +286,9 @@ export default function AdminDashboard() {
       r.enviado_em || r.criado_em,
       r.enviado_em ? 'Registrado' : 'Pendente',
     ])
-
     const csv = [headers, ...rows].map(row =>
       row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')
     ).join('\n')
-
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -139,10 +344,7 @@ export default function AdminDashboard() {
                 <span className="progress-percent">{stats.porcentagem.toFixed(1)}%</span>
               </div>
               <div className="progress-bar-bg">
-                <div
-                  className="progress-bar-fill"
-                  style={{ width: `${Math.min(stats.porcentagem, 100)}%` }}
-                />
+                <div className="progress-bar-fill" style={{ width: `${Math.min(stats.porcentagem, 100)}%` }} />
               </div>
               <div className="progress-footer">
                 <span>{stats.registrados} de {TOTAL_NOTEBOOKS} notebooks registrados</span>
@@ -154,25 +356,11 @@ export default function AdminDashboard() {
 
             <div className="admin-toolbar">
               <div className="toolbar-left">
-                <input
-                  className="search-input"
-                  placeholder="Buscar por nome, serial ou email..."
-                  value={busca}
-                  onChange={e => setBusca(e.target.value)}
-                />
+                <input className="search-input" placeholder="Buscar por nome, serial ou email..." value={busca} onChange={e => setBusca(e.target.value)} />
                 <div className="filter-group">
-                  <button
-                    className={`filter-btn ${statusFilter === '' ? 'active' : ''}`}
-                    onClick={() => setStatusFilter('')}
-                  >Todos ({stats.total})</button>
-                  <button
-                    className={`filter-btn ${statusFilter === 'pendente' ? 'active' : ''}`}
-                    onClick={() => setStatusFilter('pendente')}
-                  >Pendentes ({stats.pendentes})</button>
-                  <button
-                    className={`filter-btn ${statusFilter === 'registrado' ? 'active' : ''}`}
-                    onClick={() => setStatusFilter('registrado')}
-                  >Registrados ({stats.registrados})</button>
+                  <button className={`filter-btn ${statusFilter === '' ? 'active' : ''}`} onClick={() => setStatusFilter('')}>Todos ({stats.total})</button>
+                  <button className={`filter-btn ${statusFilter === 'pendente' ? 'active' : ''}`} onClick={() => setStatusFilter('pendente')}>Pendentes ({stats.pendentes})</button>
+                  <button className={`filter-btn ${statusFilter === 'registrado' ? 'active' : ''}`} onClick={() => setStatusFilter('registrado')}>Registrados ({stats.registrados})</button>
                 </div>
               </div>
               <div className="toolbar-right">
@@ -193,32 +381,25 @@ export default function AdminDashboard() {
                     <th>Data</th>
                     <th>Fotos</th>
                     <th>Status</th>
+                    <th style={{ width: 80 }}>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRegistros.length === 0 ? (
-                    <tr><td colSpan="8" className="empty">Nenhum registro encontrado</td></tr>
+                    <tr><td colSpan="9" className="empty">Nenhum registro encontrado</td></tr>
                   ) : (
                     filteredRegistros.map(r => (
-                      <tr key={r.id}>
+                      <tr key={r.id} className="clickable-row" onClick={() => handleRowClick(r)}>
                         <td className="cell-name">{r.nome || <span className="empty-field">Aguardando</span>}</td>
                         <td>{r.email || <span className="empty-field">-</span>}</td>
                         <td>{r.celular || <span className="empty-field">-</span>}</td>
                         <td><code>{r.serial}</code></td>
                         <td>{r.modelo_notebook || <span className="empty-field">-</span>}</td>
-                        <td className="cell-date">
-                          {new Date(r.enviado_em || r.criado_em).toLocaleString('pt-BR')}
-                        </td>
+                        <td className="cell-date">{new Date(r.enviado_em || r.criado_em).toLocaleString('pt-BR')}</td>
                         <td>
                           <div className="foto-thumbs">
                             {[r.foto1_url, r.foto2_url, r.foto3_url].filter(Boolean).map((url, i) => (
-                              <img
-                                key={i}
-                                src={url}
-                                alt={`Foto ${i + 1}`}
-                                className="foto-thumb"
-                                onClick={() => setSelectedFoto(url)}
-                              />
+                              <img key={i} src={url} alt={`Foto ${i + 1}`} className="foto-thumb" onClick={e => { e.stopPropagation(); setSelectedFoto(url) }} />
                             ))}
                             {![r.foto1_url, r.foto2_url, r.foto3_url].some(Boolean) && <span className="no-fotos">-</span>}
                           </div>
@@ -227,6 +408,12 @@ export default function AdminDashboard() {
                           <span className={`status-badge ${r.enviado_em ? 'status-ok' : 'status-pendente'}`}>
                             {r.enviado_em ? 'Registrado' : 'Pendente'}
                           </span>
+                        </td>
+                        <td>
+                          <div className="row-actions">
+                            <button className="action-btn" title="Editar" onClick={(e) => handleEditClick(r, e)}>&#9998;</button>
+                            <button className="action-btn action-delete" title="Excluir" onClick={(e) => handleDeleteClick(r, e)}>&#10005;</button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -246,6 +433,24 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      <DetailModal
+        registro={detailRegistro}
+        onClose={() => setDetailRegistro(null)}
+        onEdit={(r) => setEditRegistro(r)}
+      />
+
+      <EditModal
+        registro={editRegistro}
+        onClose={() => setEditRegistro(null)}
+        onSave={fetchRegistros}
+      />
+
+      <DeleteConfirm
+        registro={deleteRegistro}
+        onClose={() => setDeleteRegistro(null)}
+        onDeleted={fetchRegistros}
+      />
     </div>
   )
 }

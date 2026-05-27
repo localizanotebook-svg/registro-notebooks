@@ -42,3 +42,30 @@ export async function enviarLink(token, body) {
   })
   return res.json()
 }
+
+export async function getRegistro(token, id) {
+  const res = await fetch(`${API_BASE}/admin/registros/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return res.json()
+}
+
+export async function editarRegistro(token, id, body) {
+  const res = await fetch(`${API_BASE}/admin/registros/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  })
+  return res.json()
+}
+
+export async function deletarRegistro(token, id) {
+  const res = await fetch(`${API_BASE}/admin/registros/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return res.json()
+}

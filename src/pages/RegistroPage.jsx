@@ -15,7 +15,8 @@ export default function RegistroPage() {
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState([false, false, false])
   const [previews, setPreviews] = useState([null, null, null])
-  const fileInputs = [useRef(), useRef(), useRef()]
+  const cameraInputs = [useRef(), useRef(), useRef()]
+  const galleryInputs = [useRef(), useRef(), useRef()]
 
   const [form, setForm] = useState({
     nome: '',
@@ -45,8 +46,8 @@ export default function RegistroPage() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  async function handleUpload(index) {
-    const file = fileInputs[index].current?.files?.[0]
+  async function handleUpload(index, inputRef) {
+    const file = inputRef.current?.files?.[0]
     if (!file) return
 
     if (file.size > 5 * 1024 * 1024) {
@@ -80,15 +81,12 @@ export default function RegistroPage() {
     }
   }
 
-  function triggerFile(index) {
-    fileInputs[index].current?.click()
-  }
-
   function removeFoto(index) {
     const key = `foto${index + 1}_url`
     setForm(prev => ({ ...prev, [key]: '' }))
     setPreviews(prev => { const n = [...prev]; n[index] = null; return n })
-    if (fileInputs[index].current) fileInputs[index].current.value = ''
+    cameraInputs[index].current && (cameraInputs[index].current.value = '')
+    galleryInputs[index].current && (galleryInputs[index].current.value = '')
   }
 
   async function handleSubmit(e) {
@@ -176,13 +174,21 @@ export default function RegistroPage() {
             <label>Fotos do equipamento (opcional, máx. 5MB cada)</label>
             <div className="fotos-grid">
               {[0, 1, 2].map(i => (
-                <div key={i} className="foto-upload" onClick={() => !uploading[i] && triggerFile(i)}>
+                <div key={i} className="foto-upload">
                   <input
-                    ref={fileInputs[i]}
+                    ref={cameraInputs[i]}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    hidden
+                    onChange={() => handleUpload(i, cameraInputs[i])}
+                  />
+                  <input
+                    ref={galleryInputs[i]}
                     type="file"
                     accept="image/*"
                     hidden
-                    onChange={() => handleUpload(i)}
+                    onChange={() => handleUpload(i, galleryInputs[i])}
                   />
                   {uploading[i] ? (
                     <div className="uploading"><div className="spinner-sm" /><span>Enviando...</span></div>
@@ -195,6 +201,16 @@ export default function RegistroPage() {
                     <div className="upload-placeholder">
                       <span className="plus-icon">+</span>
                       <span>Foto {i + 1}</span>
+                    </div>
+                  )}
+                  {!previews[i] && !uploading[i] && (
+                    <div className="foto-options">
+                      <button type="button" className="foto-option-btn" onClick={() => cameraInputs[i].current?.click()} title="Usar câmera">
+                        &#128247; Câmera
+                      </button>
+                      <button type="button" className="foto-option-btn" onClick={() => galleryInputs[i].current?.click()} title="Escolher da galeria">
+                        &#128193; Galeria
+                      </button>
                     </div>
                   )}
                 </div>

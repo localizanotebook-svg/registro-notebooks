@@ -240,14 +240,14 @@ async function handleRegistrar(event) {
 
   await client.execute({
     sql: `UPDATE registros SET
-      nome = ?, email = ?, serial = ?,
+      nome = ?, email = ?, celular = ?, serial = ?,
       modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?,
       observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?,
       assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
       endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?,
       enviado_em = CURRENT_TIMESTAMP
     WHERE token = ?`,
-    args: [nome, email, serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, token],
+    args: [nome, email, '', serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, token],
   })
 
   return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
@@ -277,12 +277,12 @@ async function handleRegistrarPublico(event) {
   const token = uuidv4()
 
   await client.execute({
-    sql: `INSERT INTO registros (token, nome, email, serial, modelo_notebook,
+    sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook,
       foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor,
       assinatura_nome, assinatura_matricula, tipo_atuacao,
       endereco_rua, endereco_bairro, endereco_cidade, endereco_cep, enviado_em)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-    args: [token, nome, email, serial, modelo_notebook || null,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    args: [token, nome, email, '', serial, modelo_notebook || null,
       foto1_url || null, foto2_url || null, foto3_url || null,
       observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null,
       assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null,
@@ -337,8 +337,8 @@ async function handleEnviarLink(event) {
   const token = uuidv4()
 
   await client.execute({
-    sql: `INSERT INTO registros (token, nome, email, serial, modelo_notebook, enviado_em)
-    VALUES (?, '', '', ?, NULL, NULL)`,
+    sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook, enviado_em)
+    VALUES (?, '', '', '', ?, NULL, NULL)`,
     args: [token, token],
   })
 
@@ -391,12 +391,12 @@ async function handleEditRegistro(event, id) {
   }
 
   await client.execute({
-    sql: `UPDATE registros SET nome = ?, email = ?, serial = ?,
+    sql: `UPDATE registros SET nome = ?, email = ?, celular = ?, serial = ?,
       modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?,
       assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
       endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?
     WHERE id = ?`,
-    args: [nome, email, serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, id],
+    args: [nome, email, '', serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, id],
   })
 
   return json({ sucesso: true, mensagem: 'Registro atualizado com sucesso!' })

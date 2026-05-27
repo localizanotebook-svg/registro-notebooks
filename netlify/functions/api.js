@@ -156,11 +156,12 @@ async function initDb() {
       observacao TEXT,
       com_mochila INTEGER DEFAULT 0,
       com_carregador INTEGER DEFAULT 0,
+      setor TEXT,
       enviado_em TEXT,
       criado_em TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `)
-  for (const col of ['observacao', 'com_mochila', 'com_carregador']) {
+  for (const col of ['observacao', 'com_mochila', 'com_carregador', 'setor']) {
     try {
       await client.execute(`ALTER TABLE registros ADD COLUMN ${col} TEXT`)
     } catch {}
@@ -197,7 +198,7 @@ async function handleValidarToken(event) {
 }
 
 async function handleRegistrar(event) {
-  const { token, nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador } = getBody(event)
+  const { token, nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor } = getBody(event)
 
   if (!token || !nome || !email || !celular || !serial) {
     return json({ error: 'Campos obrigatórios: token, nome, email, celular, serial' }, 400)
@@ -234,17 +235,17 @@ async function handleRegistrar(event) {
     sql: `UPDATE registros SET
       nome = ?, email = ?, celular = ?, serial = ?,
       modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?,
-      observacao = ?, com_mochila = ?, com_carregador = ?,
+      observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?,
       enviado_em = CURRENT_TIMESTAMP
     WHERE token = ?`,
-    args: [nome, email, celular, serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, token],
+    args: [nome, email, celular, serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, token],
   })
 
   return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
 }
 
 async function handleRegistrarPublico(event) {
-  const { nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador } = getBody(event)
+  const { nome, email, celular, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor } = getBody(event)
 
   if (!nome || !email || !celular || !serial) {
     return json({ error: 'Campos obrigatórios: nome, email, celular, serial' }, 400)
@@ -268,11 +269,11 @@ async function handleRegistrarPublico(event) {
 
   await client.execute({
     sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook,
-      foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, enviado_em)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor, enviado_em)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     args: [token, nome, email, celular, serial, modelo_notebook || null,
       foto1_url || null, foto2_url || null, foto3_url || null,
-      observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0],
+      observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null],
   })
 
   return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
@@ -359,7 +360,7 @@ async function handleGetRegistro(event, id) {
 }
 
 async function handleEditRegistro(event, id) {
-  const { nome, email, celular, serial, modelo_notebook, observacao, com_mochila, com_carregador } = getBody(event)
+  const { nome, email, celular, serial, modelo_notebook, observacao, com_mochila, com_carregador, setor } = getBody(event)
 
   if (!nome || !email || !celular || !serial) {
     return json({ error: 'Campos obrigatórios: nome, email, celular, serial' }, 400)
@@ -378,9 +379,9 @@ async function handleEditRegistro(event, id) {
 
   await client.execute({
     sql: `UPDATE registros SET nome = ?, email = ?, celular = ?, serial = ?,
-      modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?
+      modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?
     WHERE id = ?`,
-    args: [nome, email, celular, serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, id],
+    args: [nome, email, celular, serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, id],
   })
 
   return json({ sucesso: true, mensagem: 'Registro atualizado com sucesso!' })

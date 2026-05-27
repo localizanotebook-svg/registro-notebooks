@@ -31,6 +31,7 @@ export default function RegistroPage() {
     observacao: '',
     com_mochila: false,
     com_carregador: false,
+    setor: '',
   })
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export default function RegistroPage() {
     setForm({
       nome: '', email: '', celular: '', serial: '', modelo_notebook: '',
       foto1_url: '', foto2_url: '', foto3_url: '', observacao: '',
-      com_mochila: false, com_carregador: false,
+      com_mochila: false, com_carregador: false, setor: '',
     })
     setPreviews([null, null, null])
     setError('')
@@ -198,6 +199,11 @@ export default function RegistroPage() {
           <div className="form-group">
             <label>Modelo do notebook</label>
             <input name="modelo_notebook" value={form.modelo_notebook} onChange={handleChange} placeholder="Ex: HP EliteBook 840" />
+          </div>
+
+          <div className="form-group">
+            <label>Setor</label>
+            <input name="setor" value={form.setor} onChange={handleChange} placeholder="Ex: TI, RH, Financeiro..." />
           </div>
 
           <div className="form-group">

@@ -82,6 +82,10 @@ function DetailModal({ registro, onClose, onEdit }) {
             <span className="detail-value">{registro.modelo_notebook || '-'}</span>
           </div>
           <div className="detail-field">
+            <span className="detail-label">Setor</span>
+            <span className="detail-value">{registro.setor || '-'}</span>
+          </div>
+          <div className="detail-field">
             <span className="detail-label">Acessórios</span>
             <span className="detail-value">
               {registro.com_mochila ? 'Mochila' : ''}
@@ -129,7 +133,7 @@ function DetailModal({ registro, onClose, onEdit }) {
 }
 
 function EditModal({ registro, onClose, onSave }) {
-  const [form, setForm] = useState({ nome: '', email: '', celular: '', serial: '', modelo_notebook: '', observacao: '', com_mochila: false, com_carregador: false })
+  const [form, setForm] = useState({ nome: '', email: '', celular: '', serial: '', modelo_notebook: '', setor: '', observacao: '', com_mochila: false, com_carregador: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -141,6 +145,7 @@ function EditModal({ registro, onClose, onSave }) {
         celular: registro.celular || '',
         serial: registro.serial || '',
         modelo_notebook: registro.modelo_notebook || '',
+        setor: registro.setor || '',
         observacao: registro.observacao || '',
         com_mochila: !!Number(registro.com_mochila),
         com_carregador: !!Number(registro.com_carregador),
@@ -190,6 +195,10 @@ function EditModal({ registro, onClose, onSave }) {
           <div className="form-group">
             <label>Modelo</label>
             <input value={form.modelo_notebook} onChange={e => setForm({ ...form, modelo_notebook: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label>Setor</label>
+            <input value={form.setor} onChange={e => setForm({ ...form, setor: e.target.value })} />
           </div>
           <div className="form-group">
             <label>Acessórios</label>
@@ -351,7 +360,7 @@ export default function AdminDashboard() {
     if (!token) { navigate('/admin/login'); return }
     setLoading(true)
     fetchRegistros().then(() => setLoading(false))
-    const interval = setInterval(fetchRegistros, 30000)
+    const interval = setInterval(fetchRegistros, 15000)
     return () => clearInterval(interval)
   }, [token, navigate, fetchRegistros])
 
@@ -388,9 +397,9 @@ export default function AdminDashboard() {
   function handleLogout() { localStorage.removeItem('admin_token'); navigate('/admin/login') }
 
   function exportCSV() {
-    const headers = ['Nome', 'Email', 'Celular', 'Serial', 'Modelo', 'Mochila', 'Carregador', 'Observações', 'Data', 'Status']
+    const headers = ['Nome', 'Email', 'Celular', 'Serial', 'Modelo', 'Setor', 'Mochila', 'Carregador', 'Observações', 'Data', 'Status']
     const rows = filteredRegistros.map(r => [
-      r.nome, r.email, r.celular, r.serial, r.modelo_notebook || '',
+      r.nome, r.email, r.celular, r.serial, r.modelo_notebook || '', r.setor || '',
       Number(r.com_mochila) ? 'Sim' : 'Não', Number(r.com_carregador) ? 'Sim' : 'Não',
       r.observacao || '', r.enviado_em || r.criado_em,
       r.enviado_em ? 'Registrado' : 'Pendente',
@@ -495,6 +504,7 @@ export default function AdminDashboard() {
                     <th>Celular</th>
                     <th>Serial</th>
                     <th>Modelo</th>
+                    <th>Setor</th>
                     <th>Acessórios</th>
                     <th>Observações</th>
                     <th>Data</th>
@@ -505,7 +515,7 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {filteredRegistros.length === 0 ? (
-                    <tr><td colSpan="11" className="empty">Nenhum registro encontrado</td></tr>
+                    <tr><td colSpan="12" className="empty">Nenhum registro encontrado</td></tr>
                   ) : (
                     filteredRegistros.map(r => (
                       <tr key={r.id} className="clickable-row" onClick={() => handleRowClick(r)}>
@@ -514,6 +524,7 @@ export default function AdminDashboard() {
                         <td>{r.celular || <span className="empty-field">-</span>}</td>
                         <td><code>{r.serial}</code></td>
                         <td>{r.modelo_notebook || <span className="empty-field">-</span>}</td>
+                        <td style={{ fontSize: 13 }}>{r.setor || <span className="empty-field">-</span>}</td>
                         <td style={{ fontSize: 12 }}>{acessoriosText(r)}</td>
                         <td style={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {r.observacao || <span className="empty-field">-</span>}

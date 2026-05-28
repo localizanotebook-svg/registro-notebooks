@@ -153,9 +153,12 @@ async function initDb() {
       foto1_url TEXT,
       foto2_url TEXT,
       foto3_url TEXT,
+      foto4_url TEXT,
       observacao TEXT,
       com_mochila INTEGER DEFAULT 0,
       com_carregador INTEGER DEFAULT 0,
+      com_teclado INTEGER DEFAULT 0,
+      com_mouse INTEGER DEFAULT 0,
       setor TEXT,
       assinatura_nome TEXT,
       assinatura_matricula TEXT,
@@ -168,7 +171,7 @@ async function initDb() {
       criado_em TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `)
-  for (const col of ['observacao', 'com_mochila', 'com_carregador', 'setor', 'assinatura_nome', 'assinatura_matricula', 'tipo_atuacao', 'endereco_rua', 'endereco_bairro', 'endereco_cidade', 'endereco_cep']) {
+  for (const col of ['observacao', 'com_mochila', 'com_carregador', 'com_teclado', 'com_mouse', 'setor', 'assinatura_nome', 'assinatura_matricula', 'tipo_atuacao', 'endereco_rua', 'endereco_bairro', 'endereco_cidade', 'endereco_cep', 'foto4_url']) {
     try {
       await client.execute(`ALTER TABLE registros ADD COLUMN ${col} TEXT`)
     } catch {}
@@ -205,7 +208,7 @@ async function handleValidarToken(event) {
 }
 
 async function handleRegistrar(event) {
-  const { token, nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
+  const { token, nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
   if (!token || !nome || !email || !serial) {
     return json({ error: 'Campos obrigatórios: token, nome, email, serial' }, 400)
@@ -241,20 +244,20 @@ async function handleRegistrar(event) {
   await client.execute({
     sql: `UPDATE registros SET
       nome = ?, email = ?, celular = ?, serial = ?,
-      modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?,
-      observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?,
+      modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?, foto4_url = ?,
+      observacao = ?, com_mochila = ?, com_carregador = ?, com_teclado = ?, com_mouse = ?, setor = ?,
       assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
       endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?,
       enviado_em = CURRENT_TIMESTAMP
     WHERE token = ?`,
-    args: [nome, email, '', serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, token],
+    args: [nome, email, '', serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, token],
   })
 
   return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
 }
 
 async function handleRegistrarPublico(event) {
-  const { nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
+  const { nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
   if (!nome || !email || !serial) {
     return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
@@ -278,13 +281,13 @@ async function handleRegistrarPublico(event) {
 
   await client.execute({
     sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook,
-      foto1_url, foto2_url, foto3_url, observacao, com_mochila, com_carregador, setor,
+      foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor,
       assinatura_nome, assinatura_matricula, tipo_atuacao,
       endereco_rua, endereco_bairro, endereco_cidade, endereco_cep, enviado_em)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     args: [token, nome, email, '', serial, modelo_notebook || null,
-      foto1_url || null, foto2_url || null, foto3_url || null,
-      observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null,
+      foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null,
+      observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null,
       assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null,
       endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null],
   })
@@ -357,6 +360,8 @@ function mapRow(r) {
     ...r,
     com_mochila: Number(r.com_mochila || 0),
     com_carregador: Number(r.com_carregador || 0),
+    com_teclado: Number(r.com_teclado || 0),
+    com_mouse: Number(r.com_mouse || 0),
   }
 }
 
@@ -373,7 +378,7 @@ async function handleGetRegistro(event, id) {
 }
 
 async function handleEditRegistro(event, id) {
-  const { nome, email, serial, modelo_notebook, observacao, com_mochila, com_carregador, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
+  const { nome, email, serial, modelo_notebook, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
   if (!nome || !email || !serial) {
     return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
@@ -392,11 +397,11 @@ async function handleEditRegistro(event, id) {
 
   await client.execute({
     sql: `UPDATE registros SET nome = ?, email = ?, celular = ?, serial = ?,
-      modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?, setor = ?,
+      modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?, com_teclado = ?, com_mouse = ?, setor = ?,
       assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
       endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?
     WHERE id = ?`,
-    args: [nome, email, '', serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, id],
+    args: [nome, email, '', serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, id],
   })
 
   return json({ sucesso: true, mensagem: 'Registro atualizado com sucesso!' })

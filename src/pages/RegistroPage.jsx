@@ -14,10 +14,10 @@ export default function RegistroPage() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
-  const [uploading, setUploading] = useState([false, false, false])
-  const [previews, setPreviews] = useState([null, null, null])
-  const cameraInputs = [useRef(), useRef(), useRef()]
-  const galleryInputs = [useRef(), useRef(), useRef()]
+  const [uploading, setUploading] = useState([false, false, false, false])
+  const [previews, setPreviews] = useState([null, null, null, null])
+  const cameraInputs = [useRef(), useRef(), useRef(), useRef()]
+  const galleryInputs = [useRef(), useRef(), useRef(), useRef()]
 
   const [form, setForm] = useState({
     nome: '',
@@ -27,9 +27,12 @@ export default function RegistroPage() {
     foto1_url: '',
     foto2_url: '',
     foto3_url: '',
+    foto4_url: '',
     observacao: '',
     com_mochila: false,
     com_carregador: false,
+    com_teclado: false,
+    com_mouse: false,
     setor: '',
     assinatura_nome: '',
     assinatura_matricula: '',
@@ -57,12 +60,12 @@ export default function RegistroPage() {
   function resetForm() {
     setForm({
       nome: '', email: '', serial: '', modelo_notebook: 'EliteBook 645 G11 da HP',
-      foto1_url: '', foto2_url: '', foto3_url: '', observacao: '',
-      com_mochila: false, com_carregador: false, setor: '',
+      foto1_url: '', foto2_url: '', foto3_url: '', foto4_url: '', observacao: '',
+      com_mochila: false, com_carregador: false, com_teclado: false, com_mouse: false, setor: '',
       assinatura_nome: '', assinatura_matricula: '', tipo_atuacao: '',
       endereco_rua: '', endereco_bairro: '', endereco_cidade: '', endereco_cep: '',
     })
-    setPreviews([null, null, null])
+    setPreviews([null, null, null, null])
     setError('')
     setSuccess(false)
     setSubmitting(false)
@@ -119,6 +122,12 @@ export default function RegistroPage() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+
+    if (!form.foto1_url || !form.foto2_url || !form.foto3_url || !form.foto4_url) {
+      setError('Todas as 4 fotos são obrigatórias. Tire uma foto do equipamento e do número de série.')
+      return
+    }
+
     setSubmitting(true)
 
     const fn = isPublico ? registrarPublico : registrarDados
@@ -264,6 +273,14 @@ export default function RegistroPage() {
                 <input type="checkbox" name="com_carregador" checked={form.com_carregador} onChange={handleChange} />
                 <span>Carregador</span>
               </label>
+              <label className="checkbox-label">
+                <input type="checkbox" name="com_teclado" checked={form.com_teclado} onChange={handleChange} />
+                <span>Teclado</span>
+              </label>
+              <label className="checkbox-label">
+                <input type="checkbox" name="com_mouse" checked={form.com_mouse} onChange={handleChange} />
+                <span>Mouse</span>
+              </label>
             </div>
           </div>
 
@@ -279,31 +296,39 @@ export default function RegistroPage() {
           </div>
 
           <div className="form-group">
-            <label>Fotos do equipamento (opcional, máx. 5MB cada)</label>
+            <label>Fotos do equipamento * (máx. 5MB cada) <span className="required-hint">— todas as fotos são obrigatórias</span></label>
             <div className="fotos-grid">
-              {[0, 1, 2].map(i => (
-                <div key={i} className="foto-upload">
-                  <input ref={cameraInputs[i]} type="file" accept="image/*" capture="environment" hidden onChange={() => handleUpload(i, cameraInputs[i])} />
-                  <input ref={galleryInputs[i]} type="file" accept="image/*" hidden onChange={() => handleUpload(i, galleryInputs[i])} />
-                  {uploading[i] ? (
-                    <div className="uploading"><div className="spinner-sm" /><span>Enviando...</span></div>
-                  ) : previews[i] ? (
-                    <div className="preview-wrapper">
-                      <img src={previews[i]} alt={`Foto ${i + 1}`} />
-                      <button type="button" className="remove-foto" onClick={(e) => { e.stopPropagation(); removeFoto(i) }}>&times;</button>
-                    </div>
-                  ) : (
-                    <div className="upload-placeholder">
-                      <span className="plus-icon">+</span>
-                      <span>Foto {i + 1}</span>
-                    </div>
-                  )}
-                  {!previews[i] && !uploading[i] && (
-                    <div className="foto-options">
-                      <button type="button" className="foto-option-btn" onClick={() => cameraInputs[i].current?.click()} title="Usar câmera">&#128247; Câmera</button>
-                      <button type="button" className="foto-option-btn" onClick={() => galleryInputs[i].current?.click()} title="Escolher da galeria">&#128193; Galeria</button>
-                    </div>
-                  )}
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="foto-item">
+                  <div className="foto-upload">
+                    <input ref={cameraInputs[i]} type="file" accept="image/*" capture="environment" hidden onChange={() => handleUpload(i, cameraInputs[i])} />
+                    <input ref={galleryInputs[i]} type="file" accept="image/*" hidden onChange={() => handleUpload(i, galleryInputs[i])} />
+                    {uploading[i] ? (
+                      <div className="uploading"><div className="spinner-sm" /><span>Enviando...</span></div>
+                    ) : previews[i] ? (
+                      <div className="preview-wrapper">
+                        <img src={previews[i]} alt={`Foto ${i + 1}`} />
+                        <button type="button" className="remove-foto" onClick={(e) => { e.stopPropagation(); removeFoto(i) }}>&times;</button>
+                      </div>
+                    ) : (
+                      <div className="upload-placeholder">
+                        <span className="plus-icon">+</span>
+                        <span>Foto {i + 1}</span>
+                      </div>
+                    )}
+                    {!previews[i] && !uploading[i] && (
+                      <div className="foto-options">
+                        <button type="button" className="foto-option-btn" onClick={() => cameraInputs[i].current?.click()} title="Usar câmera">&#128247; Câmera</button>
+                        <button type="button" className="foto-option-btn" onClick={() => galleryInputs[i].current?.click()} title="Escolher da galeria">&#128193; Galeria</button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="foto-legenda">
+                    {i === 0 && <span>Foto 1 — Equipamento (vista frontal)</span>}
+                    {i === 1 && <span>Foto 2 — Equipamento (vista lateral/inferior)</span>}
+                    {i === 2 && <span>Foto 3 — Equipamento (vista adicional)</span>}
+                    {i === 3 && <span>Foto 4 — Número de série do equipamento *</span>}
+                  </div>
                 </div>
               ))}
             </div>

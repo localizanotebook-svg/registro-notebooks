@@ -53,7 +53,7 @@ function Toast({ message, onClose }) {
 
 function DetailModal({ registro, onClose, onEdit }) {
   if (!registro) return null
-  const fotos = [registro.foto1_url, registro.foto2_url, registro.foto3_url].filter(Boolean)
+  const fotos = [registro.foto1_url, registro.foto2_url, registro.foto3_url, registro.foto4_url].filter(Boolean)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -103,10 +103,7 @@ function DetailModal({ registro, onClose, onEdit }) {
           <div className="detail-field">
             <span className="detail-label">Acessórios</span>
             <span className="detail-value">
-              {registro.com_mochila ? 'Mochila' : ''}
-              {registro.com_mochila && registro.com_carregador ? ', ' : ''}
-              {registro.com_carregador ? 'Carregador' : ''}
-              {!registro.com_mochila && !registro.com_carregador ? '-' : ''}
+              {[registro.com_mochila && 'Mochila', registro.com_carregador && 'Carregador', registro.com_teclado && 'Teclado', registro.com_mouse && 'Mouse'].filter(Boolean).join(', ') || '-'}
             </span>
           </div>
           <div className="detail-field" style={{ gridColumn: '1 / -1' }}>
@@ -148,7 +145,7 @@ function DetailModal({ registro, onClose, onEdit }) {
 }
 
 function EditModal({ registro, onClose, onSave }) {
-  const [form, setForm] = useState({ nome: '', email: '', serial: '', modelo_notebook: '', setor: '', observacao: '', com_mochila: false, com_carregador: false, assinatura_nome: '', assinatura_matricula: '', tipo_atuacao: '', endereco_rua: '', endereco_bairro: '', endereco_cidade: '', endereco_cep: '' })
+  const [form, setForm] = useState({ nome: '', email: '', serial: '', modelo_notebook: '', setor: '', observacao: '', com_mochila: false, com_carregador: false, com_teclado: false, com_mouse: false, assinatura_nome: '', assinatura_matricula: '', tipo_atuacao: '', endereco_rua: '', endereco_bairro: '', endereco_cidade: '', endereco_cep: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -163,6 +160,8 @@ function EditModal({ registro, onClose, onSave }) {
         observacao: registro.observacao || '',
         com_mochila: !!Number(registro.com_mochila),
         com_carregador: !!Number(registro.com_carregador),
+        com_teclado: !!Number(registro.com_teclado),
+        com_mouse: !!Number(registro.com_mouse),
         assinatura_nome: registro.assinatura_nome || '',
         assinatura_matricula: registro.assinatura_matricula || '',
         tipo_atuacao: registro.tipo_atuacao || '',
@@ -252,7 +251,7 @@ function EditModal({ registro, onClose, onSave }) {
           </div>
           <div className="form-group">
             <label>Acessórios</label>
-            <div className="checkbox-group" style={{ flexDirection: 'row' }}>
+            <div className="checkbox-group" style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               <label className="checkbox-label">
                 <input type="checkbox" checked={form.com_mochila} onChange={e => setForm({ ...form, com_mochila: e.target.checked })} />
                 <span>Mochila</span>
@@ -260,6 +259,14 @@ function EditModal({ registro, onClose, onSave }) {
               <label className="checkbox-label">
                 <input type="checkbox" checked={form.com_carregador} onChange={e => setForm({ ...form, com_carregador: e.target.checked })} />
                 <span>Carregador</span>
+              </label>
+              <label className="checkbox-label">
+                <input type="checkbox" checked={form.com_teclado} onChange={e => setForm({ ...form, com_teclado: e.target.checked })} />
+                <span>Teclado</span>
+              </label>
+              <label className="checkbox-label">
+                <input type="checkbox" checked={form.com_mouse} onChange={e => setForm({ ...form, com_mouse: e.target.checked })} />
+                <span>Mouse</span>
               </label>
             </div>
           </div>
@@ -447,7 +454,7 @@ export default function AdminDashboard() {
   function handleLogout() { localStorage.removeItem('admin_token'); navigate('/admin/login') }
 
   function exportXLSX() {
-    const headers = ['Nome', 'Email', 'Serial', 'Modelo', 'Setor', 'Tipo de Atuação', 'Endereço (Rua)', 'Bairro', 'Cidade', 'CEP', 'Mochila', 'Carregador', 'Assinatura', 'Matrícula', 'Observações', 'Data', 'Status']
+    const headers = ['Nome', 'Email', 'Serial', 'Modelo', 'Setor', 'Tipo de Atuação', 'Endereço (Rua)', 'Bairro', 'Cidade', 'CEP', 'Mochila', 'Carregador', 'Teclado', 'Mouse', 'Assinatura', 'Matrícula', 'Observações', 'Data', 'Status']
     const data = filteredRegistros.map(r => ({
       'Nome': r.nome,
       'Email': r.email,
@@ -461,6 +468,8 @@ export default function AdminDashboard() {
       'CEP': r.endereco_cep || '',
       'Mochila': Number(r.com_mochila) ? 'Sim' : 'Não',
       'Carregador': Number(r.com_carregador) ? 'Sim' : 'Não',
+      'Teclado': Number(r.com_teclado) ? 'Sim' : 'Não',
+      'Mouse': Number(r.com_mouse) ? 'Sim' : 'Não',
       'Assinatura': r.assinatura_nome || '',
       'Matrícula': r.assinatura_matricula || '',
       'Observações': r.observacao || '',
@@ -477,6 +486,8 @@ export default function AdminDashboard() {
     const items = []
     if (Number(r.com_mochila)) items.push('Mochila')
     if (Number(r.com_carregador)) items.push('Carregador')
+    if (Number(r.com_teclado)) items.push('Teclado')
+    if (Number(r.com_mouse)) items.push('Mouse')
     return items.length ? items.join(', ') : <span className="empty-field">-</span>
   }
 
@@ -589,10 +600,10 @@ export default function AdminDashboard() {
                         <td className="cell-date">{new Date(r.enviado_em || r.criado_em).toLocaleString('pt-BR')}</td>
                         <td>
                           <div className="foto-thumbs">
-                            {[r.foto1_url, r.foto2_url, r.foto3_url].filter(Boolean).map((url, i) => (
+                            {[r.foto1_url, r.foto2_url, r.foto3_url, r.foto4_url].filter(Boolean).map((url, i) => (
                               <img key={i} src={url} alt={`Foto ${i + 1}`} className="foto-thumb" onClick={e => { e.stopPropagation(); setSelectedFoto(url) }} />
                             ))}
-                            {![r.foto1_url, r.foto2_url, r.foto3_url].some(Boolean) && <span className="no-fotos">-</span>}
+                            {![r.foto1_url, r.foto2_url, r.foto3_url, r.foto4_url].some(Boolean) && <span className="no-fotos">-</span>}
                           </div>
                         </td>
                         <td>

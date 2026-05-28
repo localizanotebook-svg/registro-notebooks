@@ -249,7 +249,7 @@ async function handleRegistrar(event) {
         observacao = ?, com_mochila = ?, com_carregador = ?, com_teclado = ?, com_mouse = ?, setor = ?,
         assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
         endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?,
-        enviado_em = CURRENT_TIMESTAMP
+        enviado_em = datetime('now')
       WHERE token = ?`,
       args: [nome, email, '', serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, token],
     })
@@ -290,7 +290,7 @@ async function handleRegistrarPublico(event) {
         foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor,
         assinatura_nome, assinatura_matricula, tipo_atuacao,
         endereco_rua, endereco_bairro, endereco_cidade, endereco_cep, enviado_em)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       args: [token, nome, email, '', serial, modelo_notebook || null,
         foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null,
         observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null,

@@ -221,8 +221,8 @@ body {
 /* Fotos grid */
 .fotos-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
 .foto-item {
@@ -1125,11 +1125,11 @@ body {
   }
 
   .fotos-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .foto-upload {
-    aspect-ratio: 1;
+    aspect-ratio: 3/1;
   }
 
   .foto-legenda {

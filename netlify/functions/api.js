@@ -208,91 +208,101 @@ async function handleValidarToken(event) {
 }
 
 async function handleRegistrar(event) {
-  const { token, nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
+  try {
+    const { token, nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
-  if (!token || !nome || !email || !serial) {
-    return json({ error: 'Campos obrigatórios: token, nome, email, serial' }, 400)
+    if (!token || !nome || !email || !serial) {
+      return json({ error: 'Campos obrigatórios: token, nome, email, serial' }, 400)
+    }
+
+    const client = getDb()
+
+    const tokenResult = await client.execute({
+      sql: 'SELECT id, enviado_em FROM registros WHERE token = ?',
+      args: [token],
+    })
+
+    if (tokenResult.rows.length === 0) {
+      return json({ error: 'Token inválido' }, 400)
+    }
+
+    if (tokenResult.rows[0].enviado_em) {
+      return json({ error: 'Este link já foi utilizado.' }, 400)
+    }
+
+    const serialResult = await client.execute({
+      sql: 'SELECT nome, criado_em FROM registros WHERE serial = ?',
+      args: [serial],
+    })
+
+    if (serialResult.rows.length > 0) {
+      const existing = serialResult.rows[0]
+      return json({
+        error: `Este equipamento já foi registrado em ${existing.criado_em} por ${existing.nome}`,
+      }, 409)
+    }
+
+    await client.execute({
+      sql: `UPDATE registros SET
+        nome = ?, email = ?, celular = ?, serial = ?,
+        modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?, foto4_url = ?,
+        observacao = ?, com_mochila = ?, com_carregador = ?, com_teclado = ?, com_mouse = ?, setor = ?,
+        assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
+        endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?,
+        enviado_em = CURRENT_TIMESTAMP
+      WHERE token = ?`,
+      args: [nome, email, '', serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, token],
+    })
+
+    return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
+  } catch (err) {
+    console.error('Erro em handleRegistrar:', err)
+    return json({ error: 'Erro interno ao registrar: ' + err.message }, 500)
   }
-
-  const client = getDb()
-
-  const tokenResult = await client.execute({
-    sql: 'SELECT id, enviado_em FROM registros WHERE token = ?',
-    args: [token],
-  })
-
-  if (tokenResult.rows.length === 0) {
-    return json({ error: 'Token inválido' }, 400)
-  }
-
-  if (tokenResult.rows[0].enviado_em) {
-    return json({ error: 'Este link já foi utilizado.' }, 400)
-  }
-
-  const serialResult = await client.execute({
-    sql: 'SELECT nome, criado_em FROM registros WHERE serial = ?',
-    args: [serial],
-  })
-
-  if (serialResult.rows.length > 0) {
-    const existing = serialResult.rows[0]
-    return json({
-      error: `Este equipamento já foi registrado em ${existing.criado_em} por ${existing.nome}`,
-    }, 409)
-  }
-
-  await client.execute({
-    sql: `UPDATE registros SET
-      nome = ?, email = ?, celular = ?, serial = ?,
-      modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?, foto4_url = ?,
-      observacao = ?, com_mochila = ?, com_carregador = ?, com_teclado = ?, com_mouse = ?, setor = ?,
-      assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
-      endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?,
-      enviado_em = CURRENT_TIMESTAMP
-    WHERE token = ?`,
-    args: [nome, email, '', serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, token],
-  })
-
-  return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
 }
 
 async function handleRegistrarPublico(event) {
-  const { nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
+  try {
+    const { nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
-  if (!nome || !email || !serial) {
-    return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
+    if (!nome || !email || !serial) {
+      return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
+    }
+
+    const client = getDb()
+
+    const serialResult = await client.execute({
+      sql: 'SELECT nome, criado_em FROM registros WHERE serial = ?',
+      args: [serial],
+    })
+
+    if (serialResult.rows.length > 0) {
+      const existing = serialResult.rows[0]
+      return json({
+        error: `Este equipamento já foi registrado em ${existing.criado_em} por ${existing.nome}`,
+      }, 409)
+    }
+
+    const token = uuidv4()
+
+    await client.execute({
+      sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook,
+        foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor,
+        assinatura_nome, assinatura_matricula, tipo_atuacao,
+        endereco_rua, endereco_bairro, endereco_cidade, endereco_cep, enviado_em)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      args: [token, nome, email, '', serial, modelo_notebook || null,
+        foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null,
+        observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null,
+        assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null,
+        endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null],
+    })
+
+    return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
+  } catch (err) {
+    console.error('Erro em handleRegistrarPublico:', err)
+    return json({ error: 'Erro interno ao registrar: ' + err.message }, 500)
   }
-
-  const client = getDb()
-
-  const serialResult = await client.execute({
-    sql: 'SELECT nome, criado_em FROM registros WHERE serial = ?',
-    args: [serial],
-  })
-
-  if (serialResult.rows.length > 0) {
-    const existing = serialResult.rows[0]
-    return json({
-      error: `Este equipamento já foi registrado em ${existing.criado_em} por ${existing.nome}`,
-    }, 409)
-  }
-
-  const token = uuidv4()
-
-  await client.execute({
-    sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook,
-      foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor,
-      assinatura_nome, assinatura_matricula, tipo_atuacao,
-      endereco_rua, endereco_bairro, endereco_cidade, endereco_cep, enviado_em)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-    args: [token, nome, email, '', serial, modelo_notebook || null,
-      foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null,
-      observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null,
-      assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null,
-      endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null],
-  })
-
-  return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
 }
 
 async function handleAdminLogin(event) {

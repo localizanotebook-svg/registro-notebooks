@@ -130,17 +130,21 @@ export default function RegistroPage() {
 
     setSubmitting(true)
 
-    const fn = isPublico ? registrarPublico : registrarDados
-    const body = isPublico ? form : { ...form, token }
+    try {
+      const fn = isPublico ? registrarPublico : registrarDados
+      const body = isPublico ? form : { ...form, token }
 
-    const result = await fn(body)
-    if (result.sucesso) {
-      setSuccess(true)
-      if (isPublico) {
-        setTimeout(resetForm, 5000)
+      const result = await fn(body)
+      if (result.sucesso) {
+        setSuccess(true)
+        if (isPublico) {
+          setTimeout(resetForm, 5000)
+        }
+      } else {
+        setError(result.error || 'Erro ao registrar')
       }
-    } else {
-      setError(result.error || 'Erro ao registrar')
+    } catch (err) {
+      setError('Erro de conexão: ' + (err.message || 'erro inesperado'))
     }
     setSubmitting(false)
   }

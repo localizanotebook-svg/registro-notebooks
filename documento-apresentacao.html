@@ -259,9 +259,93 @@
     <p><span class="tag tag-ok">Recomendado</span> Plano Free atende bem (uploads via unsigned preset). Para produção mais robusta, planos pagos oferecem tokens de acesso, CDN dedicada e suporte Enterprise.</p>
   </div>
 
-  <!-- TABELA COMPARATIVA -->
+  <!-- COMPARATIVO: NOSSO SISTEMA vs POWER APPS -->
   <div class="section">
-    <h2>4. Tabela Comparativa</h2>
+    <h2>4. Nosso Sistema vs Microsoft Power Apps</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%;">Critério</th>
+            <th style="width: 39%;">Nosso Sistema (React + Netlify + Turso)</th>
+            <th style="width: 39%;">Microsoft Power Apps</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Curva de aprendizado</strong></td>
+            <td><span class="tag tag-warn">Média</span> Requer conhecimento em React, API, SQL</td>
+            <td><span class="tag tag-ok">Baixa</span> Low-code, arrasta e solta</td>
+          </tr>
+          <tr>
+            <td><strong>Acesso ao formulário</strong></td>
+            <td><span class="tag tag-ok">Público</span> Link aberto, sem login</td>
+            <td><span class="tag tag-warn">Restrito</span> Exige login Microsoft corporativo</td>
+          </tr>
+          <tr>
+            <td><strong>Flexibilidade de UI</strong></td>
+            <td><span class="tag tag-ok">Total</span> CSS sob medida, layout responsivo</td>
+            <td><span class="tag tag-warn">Limitada</span> Componentes pré-definidos</td>
+          </tr>
+          <tr>
+            <td><strong>Upload de imagens</strong></td>
+            <td><span class="tag tag-ok">Cloudinary</span> CDN global, otimização automática</td>
+            <td><span class="tag tag-warn">SharePoint</span> Mais pesado, sem otimização</td>
+          </tr>
+          <tr>
+            <td><strong>Banco de dados</strong></td>
+            <td><span class="tag tag-ok">Turso (SQL)</span> Relacional, consultas avançadas</td>
+            <td><span class="tag tag-ok">Dataverse/SQL</span> Também relacional</td>
+          </tr>
+          <tr>
+            <td><strong>Exportação</strong></td>
+            <td><span class="tag tag-ok">XLSX</span> Direto do dashboard</td>
+            <td><span class="tag tag-ok">Excel</span> Integração nativa</td>
+          </tr>
+          <tr>
+            <td><strong>Hospedagem</strong></td>
+            <td><span class="tag tag-ok">Netlify</span> CDN global, serverless, gratuito</td>
+            <td><span class="tag tag-warn">Microsoft Cloud</span> Requer licenças pagas por usuário</td>
+          </tr>
+          <tr>
+            <td><strong>Custo</strong></td>
+            <td><span class="tag tag-ok">Gratuito</span> Planos free das 3 plataformas</td>
+            <td><span class="tag tag-warn">Pago</span> US$ 20-40/usuário/mês</td>
+          </tr>
+          <tr>
+            <td><strong>Vendor lock-in</strong></td>
+            <td><span class="tag tag-ok">Baixo</span> Código aberto, portátil (React)</td>
+            <td><span class="tag tag-warn">Alto</span> Preso no ecossistema Microsoft</td>
+          </tr>
+          <tr>
+            <td><strong>Versionamento</strong></td>
+            <td><span class="tag tag-ok">Git/GitHub</span> Controle de versão profissional</td>
+            <td><span class="tag tag-warn">Limitado</span> Versões pela própria plataforma</td>
+          </tr>
+          <tr>
+            <td><strong>Deploy</strong></td>
+            <td><span class="tag tag-ok">Automático</span> Git push já publica</td>
+            <td><span class="tag tag-warn">Manual</span> Publicação pela interface</td>
+          </tr>
+          <tr>
+            <td><strong>Tempo de desenvolvimento</strong></td>
+            <td><span class="tag tag-warn">Médio (dias)</span> Mais código, mais controle</td>
+            <td><span class="tag tag-ok">Rápido (horas)</span> Prototipagem ágil</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Veredito</h3>
+    <p style="margin-top: 12px; padding: 16px; background: #eff6ff; border-radius: 8px; font-size: 14px;">
+      <strong>Nosso sistema é superior</strong> para este projeto porque precisamos de <strong>formulário público sem login, upload de fotos via CDN, liberdade total de layout e custo zero</strong>. O Power Apps seria mais rápido de prototipar, mas traria custos recorrentes por usuário, exigiria login Microsoft (barreira para os funcionários) e nos prenderia ao ecossistema Microsoft.
+    </p>
+  </div>
+
+  <!-- TABELA COMPARATIVA DAS PLATAFORMAS -->
+  <div class="section">
+    <h2>5. Tabela Comparativa &mdash; Plataformas</h2>
 
     <div class="table-wrap">
       <table>
@@ -317,7 +401,7 @@
 
   <!-- CREDENCIAIS DO PROJETO -->
   <div class="section">
-    <h2>5. Credenciais do Projeto</h2>
+    <h2>6. Credenciais do Projeto</h2>
     <div class="table-wrap">
       <table>
         <thead>
@@ -354,7 +438,7 @@
 
   <!-- RESUMO -->
   <div class="section" style="border-left: 4px solid #0047BB;">
-    <h2 style="border-bottom-color: #0047BB; color: #003399;">Conclusão</h2>
+    <h2 style="border-bottom-color: #0047BB; color: #003399;">7. Conclusão</h2>
     <p style="font-size: 15px; font-weight: 600; margin-bottom: 16px;">As três plataformas são seguras, maduras e amplamente adotadas por empresas de grande porte.</p>
     <ul>
       <li><strong>Netlify</strong> &mdash; Padrão de mercado para frontend serverless. Usado por gigantes como Nike e Google.</li>

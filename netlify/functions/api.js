@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto'
 const JWT_SECRET = process.env.JWT_SECRET || 'localiza-admin-secret-2024'
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
-const SITE_URL = process.env.SITE_URL || 'https://localizanotebook.netlify.app'
+const SITE_URL = (process.env.SITE_URL || 'https://localizanotebook.netlify.app').replace(/\/+$/, '')
 
 function hashPassword(pwd) {
   return createHash('sha256').update(pwd).digest('hex')
@@ -130,10 +130,18 @@ export async function handler(event) {
     if (method === 'POST' && parts[1] === 'alterar-senha') {
       return handleAlterarSenha(event)
     }
+
+    if (method === 'POST' && parts[1] === 'gerar-convite') {
+      return handleGerarConvite(event)
+    }
   }
 
   if (method === 'GET' && parts[0] === 'validar-token') {
     return handleValidarToken(event)
+  }
+
+  if (method === 'GET' && parts[0] === 'convidado' && parts[1]) {
+    return handleVisualizarConvidado(event, parts[1])
   }
 
   return json({ error: 'Rota não encontrada' }, 404)
@@ -171,12 +179,13 @@ async function initDb() {
       criado_em TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `)
-  for (const col of ['observacao', 'com_mochila', 'com_carregador', 'com_teclado', 'com_mouse', 'setor', 'assinatura_nome', 'assinatura_matricula', 'tipo_atuacao', 'endereco_rua', 'endereco_bairro', 'endereco_cidade', 'endereco_cep', 'foto4_url']) {
+  for (const col of ['observacao', 'com_mochila', 'com_carregador', 'com_teclado', 'com_mouse', 'setor', 'assinatura_nome', 'assinatura_matricula', 'assinatura_url', 'tipo_atuacao', 'endereco_rua', 'endereco_bairro', 'endereco_cidade', 'endereco_cep', 'foto4_url']) {
     try {
       await client.execute(`ALTER TABLE registros ADD COLUMN ${col} TEXT`)
     } catch {}
   }
   await client.execute(`CREATE TABLE IF NOT EXISTS admin_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`)
+  await client.execute(`CREATE TABLE IF NOT EXISTS guest_tokens (token TEXT PRIMARY KEY, usado INTEGER DEFAULT 0, criado_em TEXT DEFAULT CURRENT_TIMESTAMP)`)
 }
 
 async function handleValidarToken(event) {
@@ -209,7 +218,7 @@ async function handleValidarToken(event) {
 
 async function handleRegistrar(event) {
   try {
-    const { token, nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
+    const { token, nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, assinatura_url, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
     if (!token || !nome || !email || !serial) {
       return json({ error: 'Campos obrigatórios: token, nome, email, serial' }, 400)
@@ -247,11 +256,11 @@ async function handleRegistrar(event) {
         nome = ?, email = ?, celular = ?, serial = ?,
         modelo_notebook = ?, foto1_url = ?, foto2_url = ?, foto3_url = ?, foto4_url = ?,
         observacao = ?, com_mochila = ?, com_carregador = ?, com_teclado = ?, com_mouse = ?, setor = ?,
-        assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
+        assinatura_nome = ?, assinatura_matricula = ?, assinatura_url = ?, tipo_atuacao = ?,
         endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?,
         enviado_em = ?
       WHERE token = ?`,
-      args: [nome, email, '', serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, new Date().toISOString(), token],
+      args: [nome, email, '', serial, modelo_notebook || null, foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, assinatura_url || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, new Date().toISOString(), token],
     })
 
     return json({ sucesso: true, mensagem: 'Registro concluído com sucesso!' })
@@ -263,7 +272,7 @@ async function handleRegistrar(event) {
 
 async function handleRegistrarPublico(event) {
   try {
-    const { nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
+    const { nome, email, serial, modelo_notebook, foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, assinatura_url, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
     if (!nome || !email || !serial) {
       return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
@@ -288,13 +297,13 @@ async function handleRegistrarPublico(event) {
     await client.execute({
       sql: `INSERT INTO registros (token, nome, email, celular, serial, modelo_notebook,
         foto1_url, foto2_url, foto3_url, foto4_url, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor,
-        assinatura_nome, assinatura_matricula, tipo_atuacao,
+        assinatura_nome, assinatura_matricula, assinatura_url, tipo_atuacao,
         endereco_rua, endereco_bairro, endereco_cidade, endereco_cep, enviado_em)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [token, nome, email, '', serial, modelo_notebook || null,
         foto1_url || null, foto2_url || null, foto3_url || null, foto4_url || null,
         observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null,
-        assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null,
+        assinatura_nome || null, assinatura_matricula || null, assinatura_url || null, tipo_atuacao || null,
         endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, new Date().toISOString()],
     })
 
@@ -388,7 +397,7 @@ async function handleGetRegistro(event, id) {
 }
 
 async function handleEditRegistro(event, id) {
-  const { nome, email, serial, modelo_notebook, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
+  const { nome, email, serial, modelo_notebook, observacao, com_mochila, com_carregador, com_teclado, com_mouse, setor, assinatura_nome, assinatura_matricula, assinatura_url, tipo_atuacao, endereco_rua, endereco_bairro, endereco_cidade, endereco_cep } = getBody(event)
 
   if (!nome || !email || !serial) {
     return json({ error: 'Campos obrigatórios: nome, email, serial' }, 400)
@@ -408,10 +417,10 @@ async function handleEditRegistro(event, id) {
   await client.execute({
     sql: `UPDATE registros SET nome = ?, email = ?, celular = ?, serial = ?,
       modelo_notebook = ?, observacao = ?, com_mochila = ?, com_carregador = ?, com_teclado = ?, com_mouse = ?, setor = ?,
-      assinatura_nome = ?, assinatura_matricula = ?, tipo_atuacao = ?,
+      assinatura_nome = ?, assinatura_matricula = ?, assinatura_url = ?, tipo_atuacao = ?,
       endereco_rua = ?, endereco_bairro = ?, endereco_cidade = ?, endereco_cep = ?
     WHERE id = ?`,
-    args: [nome, email, '', serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, id],
+    args: [nome, email, '', serial, modelo_notebook || null, observacao || null, com_mochila ? 1 : 0, com_carregador ? 1 : 0, com_teclado ? 1 : 0, com_mouse ? 1 : 0, setor || null, assinatura_nome || null, assinatura_matricula || null, assinatura_url || null, tipo_atuacao || null, endereco_rua || null, endereco_bairro || null, endereco_cidade || null, endereco_cep || null, id],
   })
 
   return json({ sucesso: true, mensagem: 'Registro atualizado com sucesso!' })
@@ -456,4 +465,39 @@ async function handleAlterarSenha(event) {
   await setAdminPassword(nova_senha)
 
   return json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' })
+}
+
+async function handleGerarConvite(event) {
+  const token = uuidv4()
+  const client = getDb()
+  await client.execute({
+    sql: 'INSERT INTO guest_tokens (token) VALUES (?)',
+    args: [token],
+  })
+  const link = `${SITE_URL}/convidado/${token}`
+  return json({ sucesso: true, link })
+}
+
+async function handleVisualizarConvidado(event, token) {
+  const client = getDb()
+  const result = await client.execute({
+    sql: 'SELECT usado FROM guest_tokens WHERE token = ?',
+    args: [token],
+  })
+
+  if (result.rows.length === 0) {
+    return json({ error: 'Link inválido' }, 404)
+  }
+
+  if (result.rows[0].usado) {
+    return json({ error: 'Este link já foi utilizado' }, 400)
+  }
+
+  await client.execute({
+    sql: 'UPDATE guest_tokens SET usado = 1 WHERE token = ?',
+    args: [token],
+  })
+
+  const registros = await client.execute('SELECT * FROM registros ORDER BY criado_em DESC')
+  return json({ registros: registros.rows })
 }

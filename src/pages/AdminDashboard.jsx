@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listarRegistros, getRegistro, editarRegistro, deletarRegistro, alterarSenha } from '../lib/api'
+import { listarRegistros, getRegistro, editarRegistro, deletarRegistro, alterarSenha, gerarConvite } from '../lib/api'
 import * as XLSX from 'xlsx'
 
 const TOTAL_NOTEBOOKS = 2700
@@ -92,13 +92,14 @@ function DetailModal({ registro, onClose, onEdit }) {
               {[registro.endereco_rua, registro.endereco_bairro, registro.endereco_cidade, registro.endereco_cep].filter(Boolean).join(', ') || '-'}
             </span>
           </div>
-          <div className="detail-field">
-            <span className="detail-label">Assinatura</span>
-            <span className="detail-value">{registro.assinatura_nome || '-'}</span>
-          </div>
-          <div className="detail-field">
-            <span className="detail-label">Matrícula</span>
-            <span className="detail-value">{registro.assinatura_matricula || '-'}</span>
+          <div className="detail-field" style={{ gridColumn: '1 / -1' }}>
+            <span className="detail-label">Assinatura de Recebimento</span>
+            <span className="detail-value">
+              {registro.assinatura_url ? (
+                <img src={registro.assinatura_url} alt="Assinatura" className="signature-thumb" style={{ marginRight: 8 }} />
+              ) : null}
+              {registro.assinatura_nome ? `${registro.assinatura_nome} - ${registro.assinatura_matricula || ''}` : '-'}
+            </span>
           </div>
           <div className="detail-field">
             <span className="detail-label">Acessórios</span>
@@ -393,6 +394,8 @@ export default function AdminDashboard() {
   const [editRegistro, setEditRegistro] = useState(null)
   const [deleteRegistro, setDeleteRegistro] = useState(null)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [conviteLink, setConviteLink] = useState('')
+  const [gerandoConvite, setGerandoConvite] = useState(false)
   const [toast, setToast] = useState(null)
   const prevCount = useRef(0)
   const navigate = useNavigate()
@@ -444,6 +447,18 @@ export default function AdminDashboard() {
     return list
   }, [allRegistros, busca, statusFilter])
 
+  async function handleGerarConvite() {
+    setGerandoConvite(true)
+    setConviteLink('')
+    const data = await gerarConvite(token)
+    if (data.link) {
+      setConviteLink(data.link)
+    } else {
+      setError(data.error || 'Erro ao gerar link')
+    }
+    setGerandoConvite(false)
+  }
+
   async function handleRowClick(r) {
     const data = await getRegistro(token, r.id)
     if (data.registro) setDetailRegistro(data.registro)
@@ -454,7 +469,7 @@ export default function AdminDashboard() {
   function handleLogout() { localStorage.removeItem('admin_token'); navigate('/admin/login') }
 
   function exportXLSX() {
-    const headers = ['Nome', 'Email', 'Serial', 'Modelo', 'Setor', 'Tipo de Atuação', 'Endereço (Rua)', 'Bairro', 'Cidade', 'CEP', 'Mochila', 'Carregador', 'Teclado', 'Mouse', 'Assinatura', 'Matrícula', 'Observações', 'Data', 'Status']
+    const headers = ['Nome', 'Email', 'Serial', 'Modelo', 'Setor', 'Tipo de Atuação', 'Endereço (Rua)', 'Bairro', 'Cidade', 'CEP', 'Mochila', 'Carregador', 'Teclado', 'Mouse', 'Assinatura', 'Matrícula', 'Assinatura_URL', 'Observações', 'Data', 'Status']
     const data = filteredRegistros.map(r => ({
       'Nome': r.nome,
       'Email': r.email,
@@ -472,6 +487,7 @@ export default function AdminDashboard() {
       'Mouse': Number(r.com_mouse) ? 'Sim' : 'Não',
       'Assinatura': r.assinatura_nome || '',
       'Matrícula': r.assinatura_matricula || '',
+      'Assinatura_URL': r.assinatura_url || '',
       'Observações': r.observacao || '',
       'Data': r.enviado_em || r.criado_em,
       'Status': r.enviado_em ? 'Registrado' : 'Pendente',
@@ -498,6 +514,7 @@ export default function AdminDashboard() {
           <h1>Localiza &mdash; Registro de Notebooks</h1>
           <div className="admin-header-actions">
             <button className="btn btn-sm" onClick={() => navigate('/admin/enviar')}>Links</button>
+            <button className="btn btn-sm btn-outline" onClick={handleGerarConvite} disabled={gerandoConvite}>{gerandoConvite ? 'Gerando...' : 'Link Convidado'}</button>
             <button className="btn btn-sm btn-outline" onClick={() => setShowPasswordModal(true)}>Alterar Senha</button>
             <button className="btn btn-sm btn-outline" onClick={handleLogout}>Sair</button>
           </div>
@@ -546,6 +563,16 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {conviteLink && (
+              <div className="link-box" style={{ marginBottom: 16 }}>
+                <label>Link Convidado (uso único)</label>
+                <div className="link-row">
+                  <input className="link-input" value={conviteLink} readOnly onClick={e => e.target.select()} />
+                  <button className="btn btn-sm" onClick={() => { navigator.clipboard.writeText(conviteLink); setConviteLink('') }}>Copiar</button>
+                </div>
+              </div>
+            )}
+
             {error && <div className="alert alert-error">{error}</div>}
 
             <div className="admin-toolbar">
@@ -574,6 +601,7 @@ export default function AdminDashboard() {
                     <th>Setor</th>
                     <th>Atuação</th>
                     <th>Acessórios</th>
+                    <th>Assinatura</th>
                     <th>Observações</th>
                     <th>Data</th>
                     <th>Fotos</th>
@@ -583,7 +611,7 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {filteredRegistros.length === 0 ? (
-                    <tr><td colSpan="12" className="empty">Nenhum registro encontrado</td></tr>
+                    <tr><td colSpan="13" className="empty">Nenhum registro encontrado</td></tr>
                   ) : (
                     filteredRegistros.map(r => (
                       <tr key={r.id} className="clickable-row" onClick={() => handleRowClick(r)}>
@@ -594,6 +622,13 @@ export default function AdminDashboard() {
                         <td style={{ fontSize: 13 }}>{r.setor || <span className="empty-field">-</span>}</td>
                         <td style={{ fontSize: 13 }}>{r.tipo_atuacao || <span className="empty-field">-</span>}</td>
                         <td style={{ fontSize: 12 }}>{acessoriosText(r)}</td>
+                        <td style={{ fontSize: 12 }}>
+                          {r.assinatura_url ? (
+                            <img src={r.assinatura_url} alt="Ass" className="foto-thumb" style={{ width: 28, height: 28 }} title={`${r.assinatura_nome || ''} - ${r.assinatura_matricula || ''}`} />
+                          ) : (
+                            <span style={{ fontSize: 11, color: 'var(--gray-400)' }}>{r.assinatura_nome ? `${r.assinatura_nome.slice(0, 15)}...` : '-'}</span>
+                          )}
+                        </td>
                         <td style={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {r.observacao || <span className="empty-field">-</span>}
                         </td>

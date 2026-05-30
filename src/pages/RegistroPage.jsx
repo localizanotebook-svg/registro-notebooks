@@ -97,7 +97,7 @@ export default function RegistroPage() {
     const fd = new FormData()
     fd.append('file', file)
     fd.append('upload_preset', UPLOAD_PRESET)
-    fd.append('folder', 'registro_notebooks')
+    fd.append('folder', 'registro_sada')
 
     try {
       const res = await fetch(url, { method: 'POST', body: fd })
@@ -131,7 +131,7 @@ export default function RegistroPage() {
     const fd = new FormData()
     fd.append('file', blob, 'assinatura.png')
     fd.append('upload_preset', UPLOAD_PRESET)
-    fd.append('folder', 'registro_notebooks')
+    fd.append('folder', 'registro_sada')
     try {
       const res = await fetch(url, { method: 'POST', body: fd })
       const data = await res.json()
@@ -196,16 +196,18 @@ export default function RegistroPage() {
 
   if (!isPublico && loading) {
     return (
-      <div className="page-center">
-        <div className="spinner" />
-        <p>Validando link...</p>
+      <div className="page-center login-bg">
+        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
+          <div className="spinner" />
+          <p style={{ marginTop: 12, color: 'var(--gray-500)' }}>Validando link...</p>
+        </div>
       </div>
     )
   }
 
   if (!isPublico && !valido) {
     return (
-      <div className="page-center">
+      <div className="page-center login-bg">
         <div className="card error-card">
           <h2>Link inválido</h2>
           <p>{usado ? 'Este link já foi utilizado.' : 'Este link de registro não é válido ou expirou.'}</p>
@@ -216,7 +218,7 @@ export default function RegistroPage() {
 
   if (success && !isPublico) {
     return (
-      <div className="page-center">
+      <div className="page-center login-bg">
         <div className="card success-card">
           <div className="success-icon">&#10003;</div>
           <h2>Registro concluído com sucesso!</h2>
@@ -227,9 +229,15 @@ export default function RegistroPage() {
   }
 
   return (
-    <div className="page-center">
+    <div className="page-center login-bg">
       <div className="card form-card">
-        <div className="logo">Localiza</div>
+        <div className="logo">
+          <div className="logo-simpress-wrapper">
+            <img src="/logo-simpress.png" alt="Simpress" className="logo-img" />
+            <span className="logo-hp">an HP Company</span>
+          </div>
+          <img src="/logo-localiza.png" alt="Localiza" className="logo-img logo-localiza-img" />
+        </div>
         <h2>Registro do Notebook HP</h2>
         <p className="subtitle">Preencha seus dados e as informações do equipamento</p>
 

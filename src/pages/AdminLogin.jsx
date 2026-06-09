@@ -27,12 +27,11 @@ export default function AdminLogin() {
   return (
     <div className="page-center login-bg">
       <div className="card login-card">
-        <div className="logo">
+          <div className="logo">
           <div className="logo-simpress-wrapper">
             <img src="/logo-simpress.png" alt="Simpress" className="logo-img" />
             <span className="logo-hp">an HP Company</span>
           </div>
-          <img src="/logo-localiza.png" alt="Localiza" className="logo-img logo-localiza-img" />
         </div>
         <h2>Registro de Notebooks</h2>
         <p className="subtitle">Entre com suas credenciais de administrador</p>

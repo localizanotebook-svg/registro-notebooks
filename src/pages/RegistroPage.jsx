@@ -236,7 +236,6 @@ export default function RegistroPage() {
             <img src="/logo-simpress.png" alt="Simpress" className="logo-img" />
             <span className="logo-hp">an HP Company</span>
           </div>
-          <img src="/logo-localiza.png" alt="Localiza" className="logo-img logo-localiza-img" />
         </div>
         <h2>Registro do Notebook HP</h2>
         <p className="subtitle">Preencha seus dados e as informações do equipamento</p>

@@ -64,7 +64,7 @@ export default function GuestView() {
     <div className="admin-layout">
       <header className="admin-header">
         <div className="admin-header-content">
-          <h1>Localiza &mdash; Visualização de Registros</h1>
+          <h1>Simpress &mdash; Visualização de Registros</h1>
           <span style={{ fontSize: 13, opacity: 0.7 }}>Modo convidado &mdash; apenas visualização</span>
         </div>
       </header>

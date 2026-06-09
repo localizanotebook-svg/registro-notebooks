@@ -68,7 +68,7 @@ export default function AdminEnviar() {
           <div className="admin-header-left">
             <img src="/logo-simpress.png" alt="Simpress" className="admin-header-logo" />
             <div className="admin-header-brand">
-              <span className="admin-header-brand-title">Localiza</span>
+              <span className="admin-header-brand-title">Simpress</span>
             </div>
             <div className="admin-header-divider" />
             <h1>Gerenciar Links</h1>

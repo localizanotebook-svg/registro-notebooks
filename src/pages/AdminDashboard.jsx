@@ -35,7 +35,7 @@ function showBrowserNotification(title, body) {
 function Toast({ message, onClose }) {
   useEffect(() => {
     playNotificationSound()
-    showBrowserNotification('Localiza - Novo Registro', message)
+    showBrowserNotification('Simpress - Novo Registro', message)
     const t = setTimeout(onClose, 6000)
     return () => clearTimeout(t)
   }, [onClose])
@@ -533,7 +533,7 @@ export default function AdminDashboard() {
           <div className="admin-header-left">
             <img src="/logo-simpress.png" alt="Simpress" className="admin-header-logo" />
             <div className="admin-header-brand">
-              <span className="admin-header-brand-title">Localiza</span>
+              <span className="admin-header-brand-title">Simpress</span>
             </div>
             <div className="admin-header-divider" />
             <h1>Registro de Notebooks</h1>

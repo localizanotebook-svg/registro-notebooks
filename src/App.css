@@ -134,12 +134,7 @@ body {
   margin-left: 28px;
 }
 
-.login-card .logo-localiza-img, .form-card .logo-localiza-img {
-  height: 33px;
-  width: auto;
-  object-fit: contain;
-  margin-top: 8px;
-}
+
 
 /* Admin header brand */
 .admin-header-brand {
